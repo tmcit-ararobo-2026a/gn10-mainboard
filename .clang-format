@@ -1,44 +1,42 @@
-# .clang-format
-Language:     Cpp
+# Googleをベースにカスタムする
 BasedOnStyle: Google
-
-# 基本レイアウト
-ColumnLimit:  100
-Standard:     Latest
-IndentWidth:  4
-TabWidth:     4
-UseTab:       Never
-
-# ポインタ・参照の整列
-PointerAlignment:       Left
-ReferenceAlignment:     Left
-
-# インクルード順の整列
-SortIncludes:  true
-IncludeBlocks: Regroup
-
-# 縦の整列
-AlignConsecutiveMacros: true
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: false
-AlignAfterOpenBracket: Align
-
-# 関数・引数
-BinPackArguments: false
-BinPackParameters: false
-AllowAllArgumentsOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: false
-
-# 短いコード
-AllowShortFunctionsOnASingleLine: Inline
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-
-# 名前空間の末尾にコメントを自動付与
-FixNamespaceComments: true
-
-# ケースラベルのインデント
-IndentCaseLabels: true
-
-# クラス
+# 画面分割を想定し、短めに設定
+ColumnLimit: 80
+# インデントはROS2標準に合わせ横幅節約
+IndentWidth: 4
+# クラスのアクセスは明確に
 AccessModifierOffset: -4
+
+
+# コンストラクタの初期化リストを次行に配置し、可読性を向上させる
+PackConstructorInitializers: NextLine
+# 文字列を分割しないようにする
+BreakStringLiterals: false
+
+# 関数とクラスには明確な区切り、処理には繋がりを
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass:            true
+    AfterFunction:         true
+    AfterNamespace:        false
+    AfterControlStatement: false
+    BeforeCatch:           false
+    BeforeElse:            false
+
+# 開き括弧後に改行し、閉じ括弧に揃えてインデント
+AlignAfterOpenBracket: BlockIndent
+# 1行にパラメータを詰め込まず、1行1変数
+BinPackParameters:     false
+BinPackArguments:      false
+
+# マクロはSTM32向けに縦を揃える
+AlignConsecutiveMacros:
+    Enabled: true
+# ビットフィールドは縦のつながりがあるので揃える
+AlignConsecutiveBitFields: Consecutive
+
+# 配列は右揃えにして値をわかりやすくする
+AlignArrayOfStructures: Right
+
+# 関数をインライン表記してよいのは空のときだけ
+AllowShortFunctionsOnASingleLine: Empty
