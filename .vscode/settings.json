@@ -1,7 +1,4 @@
 {
-    "C_Cpp.default.cppStandard": "c++17",
-    "editor.formatOnSave": true,
-    "editor.formatOnPaste": false,
     "github.copilot.enable": {
         "*": false,
         "plaintext": false,
@@ -14,6 +11,10 @@
     "plantuml.exportOutDir": "docs/uml/",
     "plantuml.diagramsRoot": "docs/uml/",
     "plantuml.exportSubFolder": false,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.cppStandard": "c++17",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
     "[cpp]": {
         "editor.defaultFormatter": "ms-vscode.cpptools"
     },
