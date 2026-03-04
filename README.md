@@ -1,7 +1,6 @@
-# <リポジトリ名>
+# 2026a-gn10-mainboard
 
-<!-- 一行でプロジェクトを説明する -->
-<プロジェクトの概要を1〜2文で記述>
+[GN10Mainboard](https://github.com/ararobo/GN10Mainboard)をEthernet-CANとして使用するファームウェア開発リポジトリ
 
 ## 目次
 
@@ -14,7 +13,8 @@
 
 ## 1. 概要
 
-<!-- プロジェクトの目的・背景・解決する課題を記述 -->
+- EthernetとCAN通信を中継する基板のファームウェア
+- CAN通信は[gn10-can](https://github.com/ararobo/gn10-can)に対応
 
 ## 2. ドキュメント
 
