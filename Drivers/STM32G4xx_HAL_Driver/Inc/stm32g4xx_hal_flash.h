@@ -762,7 +762,7 @@ typedef struct {
  */
 #define __HAL_FLASH_ENABLE_IT(__INTERRUPT__)                          \
     do {                                                              \
-        if (((__INTERRUPT__)&FLASH_IT_ECCC) != 0U) {                  \
+        if (((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) {                \
             SET_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE);                   \
         }                                                             \
         if (((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) {             \
@@ -782,7 +782,7 @@ typedef struct {
  */
 #define __HAL_FLASH_DISABLE_IT(__INTERRUPT__)                           \
     do {                                                                \
-        if (((__INTERRUPT__)&FLASH_IT_ECCC) != 0U) {                    \
+        if (((__INTERRUPT__) & FLASH_IT_ECCC) != 0U) {                  \
             CLEAR_BIT(FLASH->ECCR, FLASH_ECCR_ECCIE);                   \
         }                                                               \
         if (((__INTERRUPT__) & (~FLASH_IT_ECCC)) != 0U) {               \
@@ -816,7 +816,7 @@ typedef struct {
  * @retval The new state of FLASH_FLAG (SET or RESET).
  */
 #define __HAL_FLASH_GET_FLAG(__FLAG__)                       \
-    ((((__FLAG__)&FLASH_FLAG_ECCR_ERRORS) != 0U)             \
+    ((((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U)           \
          ? (READ_BIT(FLASH->ECCR, (__FLAG__)) == (__FLAG__)) \
          : (READ_BIT(FLASH->SR, (__FLAG__)) == (__FLAG__)))
 
@@ -848,8 +848,8 @@ typedef struct {
  */
 #define __HAL_FLASH_CLEAR_FLAG(__FLAG__)                                    \
     do {                                                                    \
-        if (((__FLAG__)&FLASH_FLAG_ECCR_ERRORS) != 0U) {                    \
-            SET_BIT(FLASH->ECCR, ((__FLAG__)&FLASH_FLAG_ECCR_ERRORS));      \
+        if (((__FLAG__) & FLASH_FLAG_ECCR_ERRORS) != 0U) {                  \
+            SET_BIT(FLASH->ECCR, ((__FLAG__) & FLASH_FLAG_ECCR_ERRORS));    \
         }                                                                   \
         if (((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS)) != 0U) {               \
             WRITE_REG(FLASH->SR, ((__FLAG__) & ~(FLASH_FLAG_ECCR_ERRORS))); \

@@ -125,7 +125,8 @@ FLASH_ProcessTypeDef pFlash = {
     .Bank              = FLASH_BANK_1,
     .Page              = 0U,
     .NbPagesToErase    = 0U,
-    .CacheToReactivate = FLASH_CACHE_DISABLED};
+    .CacheToReactivate = FLASH_CACHE_DISABLED
+};
 /**
  * @}
  */
@@ -200,7 +201,8 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
             /* Program double-word (64-bit) at a specified address */
             FLASH_Program_DoubleWord(Address, Data);
             prog_bit = FLASH_CR_PG;
-        } else if ((TypeProgram == FLASH_TYPEPROGRAM_FAST) || (TypeProgram == FLASH_TYPEPROGRAM_FAST_AND_LAST)) {
+        } else if ((TypeProgram == FLASH_TYPEPROGRAM_FAST) ||
+                   (TypeProgram == FLASH_TYPEPROGRAM_FAST_AND_LAST)) {
             /* Fast program a 32 row double-word (64-bit) at a specified address */
             FLASH_Program_Fast(Address, (uint32_t)Data);
 
@@ -286,7 +288,8 @@ HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, u
         if (TypeProgram == FLASH_TYPEPROGRAM_DOUBLEWORD) {
             /* Program double-word (64-bit) at a specified address */
             FLASH_Program_DoubleWord(Address, Data);
-        } else if ((TypeProgram == FLASH_TYPEPROGRAM_FAST) || (TypeProgram == FLASH_TYPEPROGRAM_FAST_AND_LAST)) {
+        } else if ((TypeProgram == FLASH_TYPEPROGRAM_FAST) ||
+                   (TypeProgram == FLASH_TYPEPROGRAM_FAST_AND_LAST)) {
             /* Fast program a 32 row double-word (64-bit) at a specified address */
             FLASH_Program_Fast(Address, (uint32_t)Data);
         } else {
@@ -386,7 +389,8 @@ void HAL_FLASH_IRQHandler(void)
                 /* MassErase ended. Return the selected bank */
                 /* FLASH EOP interrupt user callback */
                 HAL_FLASH_EndOfOperationCallback(pFlash.Bank);
-            } else if ((procedure == FLASH_PROC_PROGRAM) || (procedure == FLASH_PROC_PROGRAM_LAST)) {
+            } else if ((procedure == FLASH_PROC_PROGRAM) ||
+                       (procedure == FLASH_PROC_PROGRAM_LAST)) {
                 /* Program ended. Return the selected address */
                 /* FLASH EOP interrupt user callback */
                 HAL_FLASH_EndOfOperationCallback(pFlash.Address);

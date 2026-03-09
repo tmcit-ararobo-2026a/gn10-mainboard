@@ -3163,7 +3163,7 @@ typedef struct {
  *
  */
 #define __HAL_RCC_PLL_PLLM_CONFIG(__PLLM__) \
-    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLM, ((__PLLM__)-1) << RCC_PLLCFGR_PLLM_Pos)
+    MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLM, ((__PLLM__) - 1) << RCC_PLLCFGR_PLLM_Pos)
 
 /**
  * @brief  Macro to configure the main PLL clock source, multiplication and division factors.
@@ -3206,7 +3206,7 @@ typedef struct {
         RCC->PLLCFGR,                                                                         \
         (RCC_PLLCFGR_PLLSRC | RCC_PLLCFGR_PLLM | RCC_PLLCFGR_PLLN | RCC_PLLCFGR_PLLQ |        \
          RCC_PLLCFGR_PLLR | RCC_PLLCFGR_PLLPDIV),                                             \
-        ((__PLLSOURCE__) | (((__PLLM__)-1U) << RCC_PLLCFGR_PLLM_Pos) |                        \
+        ((__PLLSOURCE__) | (((__PLLM__) - 1U) << RCC_PLLCFGR_PLLM_Pos) |                      \
          ((__PLLN__) << RCC_PLLCFGR_PLLN_Pos) |                                               \
          ((((__PLLQ__) >> 1U) - 1U) << RCC_PLLCFGR_PLLQ_Pos) |                                \
          ((((__PLLR__) >> 1U) - 1U) << RCC_PLLCFGR_PLLR_Pos) |                                \
@@ -3414,7 +3414,7 @@ typedef struct {
                    : ((((__FLAG__) >> 5U) == 2U)                                     \
                           ? RCC->BDCR                                                \
                           : ((((__FLAG__) >> 5U) == 3U) ? RCC->CSR : RCC->CIFR)))) & \
-       ((uint32_t)1U << ((__FLAG__)&RCC_FLAG_MASK))) != 0U)                          \
+       ((uint32_t)1U << ((__FLAG__) & RCC_FLAG_MASK))) != 0U)                        \
          ? 1U                                                                        \
          : 0U)
 
@@ -3452,13 +3452,13 @@ typedef struct {
  * @{
  */
 
-#define IS_RCC_OSCILLATORTYPE(__OSCILLATOR__)                                     \
-    (((__OSCILLATOR__) == RCC_OSCILLATORTYPE_NONE) ||                             \
-     (((__OSCILLATOR__)&RCC_OSCILLATORTYPE_HSE) == RCC_OSCILLATORTYPE_HSE) ||     \
-     (((__OSCILLATOR__)&RCC_OSCILLATORTYPE_HSI) == RCC_OSCILLATORTYPE_HSI) ||     \
-     (((__OSCILLATOR__)&RCC_OSCILLATORTYPE_HSI48) == RCC_OSCILLATORTYPE_HSI48) || \
-     (((__OSCILLATOR__)&RCC_OSCILLATORTYPE_LSI) == RCC_OSCILLATORTYPE_LSI) ||     \
-     (((__OSCILLATOR__)&RCC_OSCILLATORTYPE_LSE) == RCC_OSCILLATORTYPE_LSE))
+#define IS_RCC_OSCILLATORTYPE(__OSCILLATOR__)                                       \
+    (((__OSCILLATOR__) == RCC_OSCILLATORTYPE_NONE) ||                               \
+     (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSE) == RCC_OSCILLATORTYPE_HSE) ||     \
+     (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSI) == RCC_OSCILLATORTYPE_HSI) ||     \
+     (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_HSI48) == RCC_OSCILLATORTYPE_HSI48) || \
+     (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSI) == RCC_OSCILLATORTYPE_LSI) ||     \
+     (((__OSCILLATOR__) & RCC_OSCILLATORTYPE_LSE) == RCC_OSCILLATORTYPE_LSE))
 
 #define IS_RCC_HSE(__HSE__) \
     (((__HSE__) == RCC_HSE_OFF) || ((__HSE__) == RCC_HSE_ON) || ((__HSE__) == RCC_HSE_BYPASS))
@@ -3495,7 +3495,7 @@ typedef struct {
     (((__VALUE__) == 2U) || ((__VALUE__) == 4U) || ((__VALUE__) == 6U) || ((__VALUE__) == 8U))
 
 #define IS_RCC_CLOCKTYPE(__CLK__) \
-    ((((__CLK__)&RCC_CLOCKTYPE_ALL) != 0x00UL) && (((__CLK__) & ~RCC_CLOCKTYPE_ALL) == 0x00UL))
+    ((((__CLK__) & RCC_CLOCKTYPE_ALL) != 0x00UL) && (((__CLK__) & ~RCC_CLOCKTYPE_ALL) == 0x00UL))
 
 #define IS_RCC_SYSCLKSOURCE(__SOURCE__)                                                  \
     (((__SOURCE__) == RCC_SYSCLKSOURCE_HSI) || ((__SOURCE__) == RCC_SYSCLKSOURCE_HSE) || \

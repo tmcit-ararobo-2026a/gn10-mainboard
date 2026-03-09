@@ -443,21 +443,23 @@ typedef struct
     __IO uint32_t ErrorCode; /*!< FDCAN Error code          */
 
 #if USE_HAL_FDCAN_REGISTER_CALLBACKS == 1
-    void (*TxEventFifoCallback
-    )(struct __FDCAN_HandleTypeDef *hfdcan,
-      uint32_t TxEventFifoITs); /*!< FDCAN Tx Event Fifo callback         */
-    void (*RxFifo0Callback
-    )(struct __FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs); /*!< FDCAN Rx Fifo 0 callback */
-    void (*RxFifo1Callback
-    )(struct __FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs); /*!< FDCAN Rx Fifo 1 callback */
+    void (*TxEventFifoCallback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t TxEventFifoITs
+    ); /*!< FDCAN Tx Event Fifo callback         */
+    void (*RxFifo0Callback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs
+    ); /*!< FDCAN Rx Fifo 0 callback             */
+    void (*RxFifo1Callback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs
+    ); /*!< FDCAN Rx Fifo 1 callback             */
     void (*TxFifoEmptyCallback)(struct __FDCAN_HandleTypeDef *hfdcan
     ); /*!< FDCAN Tx Fifo Empty callback         */
-    void (*TxBufferCompleteCallback
-    )(struct __FDCAN_HandleTypeDef *hfdcan,
-      uint32_t BufferIndexes); /*!< FDCAN Tx Buffer complete callback    */
-    void (*TxBufferAbortCallback
-    )(struct __FDCAN_HandleTypeDef *hfdcan,
-      uint32_t BufferIndexes); /*!< FDCAN Tx Buffer abort callback       */
+    void (*TxBufferCompleteCallback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t BufferIndexes
+    ); /*!< FDCAN Tx Buffer complete callback    */
+    void (*TxBufferAbortCallback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t BufferIndexes
+    ); /*!< FDCAN Tx Buffer abort callback       */
     void (*HighPriorityMessageCallback)(struct __FDCAN_HandleTypeDef *hfdcan
     ); /*!< FDCAN High priority message callback */
     void (*TimestampWraparoundCallback)(struct __FDCAN_HandleTypeDef *hfdcan
@@ -465,9 +467,9 @@ typedef struct
     void (*TimeoutOccurredCallback)(struct __FDCAN_HandleTypeDef *hfdcan
     ); /*!< FDCAN Timeout occurred callback      */
     void (*ErrorCallback)(struct __FDCAN_HandleTypeDef *hfdcan); /*!< FDCAN Error callback */
-    void (*ErrorStatusCallback
-    )(struct __FDCAN_HandleTypeDef *hfdcan,
-      uint32_t ErrorStatusITs); /*!< FDCAN Error status callback          */
+    void (*ErrorStatusCallback)(
+        struct __FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs
+    ); /*!< FDCAN Error status callback          */
 
     void (*MspInitCallback)(struct __FDCAN_HandleTypeDef *hfdcan); /*!< FDCAN Msp Init callback */
     void (*MspDeInitCallback)(struct __FDCAN_HandleTypeDef *hfdcan
@@ -498,24 +500,24 @@ typedef enum {
  */
 typedef void (*pFDCAN_CallbackTypeDef)(FDCAN_HandleTypeDef *hfdcan
 ); /*!< pointer to a common FDCAN callback function           */
-typedef void (*pFDCAN_TxEventFifoCallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t TxEventFifoITs); /*!< pointer to Tx event Fifo FDCAN callback function      */
-typedef void (*pFDCAN_RxFifo0CallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t RxFifo0ITs); /*!< pointer to Rx Fifo 0 FDCAN callback function          */
-typedef void (*pFDCAN_RxFifo1CallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t RxFifo1ITs); /*!< pointer to Rx Fifo 1 FDCAN callback function          */
-typedef void (*pFDCAN_TxBufferCompleteCallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t BufferIndexes); /*!< pointer to Tx Buffer complete FDCAN callback function */
-typedef void (*pFDCAN_TxBufferAbortCallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t BufferIndexes); /*!< pointer to Tx Buffer abort FDCAN callback function    */
-typedef void (*pFDCAN_ErrorStatusCallbackTypeDef
-)(FDCAN_HandleTypeDef *hfdcan,
-  uint32_t ErrorStatusITs); /*!< pointer to Error Status callback function             */
+typedef void (*pFDCAN_TxEventFifoCallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t TxEventFifoITs
+); /*!< pointer to Tx event Fifo FDCAN callback function      */
+typedef void (*pFDCAN_RxFifo0CallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs
+); /*!< pointer to Rx Fifo 0 FDCAN callback function          */
+typedef void (*pFDCAN_RxFifo1CallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs
+); /*!< pointer to Rx Fifo 1 FDCAN callback function          */
+typedef void (*pFDCAN_TxBufferCompleteCallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t BufferIndexes
+); /*!< pointer to Tx Buffer complete FDCAN callback function */
+typedef void (*pFDCAN_TxBufferAbortCallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t BufferIndexes
+); /*!< pointer to Tx Buffer abort FDCAN callback function    */
+typedef void (*pFDCAN_ErrorStatusCallbackTypeDef)(
+    FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs
+); /*!< pointer to Error Status callback function             */
 
 #endif /* USE_HAL_FDCAN_REGISTER_CALLBACKS */
 

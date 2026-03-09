@@ -84,25 +84,25 @@ typedef struct {
 #define PWR_WAKEUP_PIN3_HIGH PWR_CR3_EWUP3 /*!< Wakeup pin 3 (with high level polarity) */
 #define PWR_WAKEUP_PIN4_HIGH PWR_CR3_EWUP4 /*!< Wakeup pin 4 (with high level polarity) */
 #define PWR_WAKEUP_PIN5_HIGH PWR_CR3_EWUP5 /*!< Wakeup pin 5 (with high level polarity) */
-#define PWR_WAKEUP_PIN1_LOW                                   \
-    (uint32_t                                                 \
-    )((PWR_CR4_WP1 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP1 \
+#define PWR_WAKEUP_PIN1_LOW                                     \
+    (uint32_t)(                                                 \
+        (PWR_CR4_WP1 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP1 \
     ) /*!< Wakeup pin 1 (with low level polarity) */
-#define PWR_WAKEUP_PIN2_LOW                                   \
-    (uint32_t                                                 \
-    )((PWR_CR4_WP2 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP2 \
+#define PWR_WAKEUP_PIN2_LOW                                     \
+    (uint32_t)(                                                 \
+        (PWR_CR4_WP2 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP2 \
     ) /*!< Wakeup pin 2 (with low level polarity) */
-#define PWR_WAKEUP_PIN3_LOW                                   \
-    (uint32_t                                                 \
-    )((PWR_CR4_WP3 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP3 \
+#define PWR_WAKEUP_PIN3_LOW                                     \
+    (uint32_t)(                                                 \
+        (PWR_CR4_WP3 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP3 \
     ) /*!< Wakeup pin 3 (with low level polarity) */
-#define PWR_WAKEUP_PIN4_LOW                                   \
-    (uint32_t                                                 \
-    )((PWR_CR4_WP4 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP4 \
+#define PWR_WAKEUP_PIN4_LOW                                     \
+    (uint32_t)(                                                 \
+        (PWR_CR4_WP4 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP4 \
     ) /*!< Wakeup pin 4 (with low level polarity) */
-#define PWR_WAKEUP_PIN5_LOW                                   \
-    (uint32_t                                                 \
-    )((PWR_CR4_WP5 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP5 \
+#define PWR_WAKEUP_PIN5_LOW                                     \
+    (uint32_t)(                                                 \
+        (PWR_CR4_WP5 << PWR_WUP_POLARITY_SHIFT) | PWR_CR3_EWUP5 \
     ) /*!< Wakeup pin 5 (with low level polarity) */
 /**
  * @}
@@ -717,7 +717,7 @@ typedef struct {
 #define IS_PWR_BATTERY_CHARGING(CHARGING) \
     (((CHARGING) == PWR_BATTERY_CHARGING_DISABLE) || ((CHARGING) == PWR_BATTERY_CHARGING_ENABLE))
 
-#define IS_PWR_GPIO_BIT_NUMBER(BIT_NUMBER) (((BIT_NUMBER)&GPIO_PIN_MASK) != (uint32_t)0x00U)
+#define IS_PWR_GPIO_BIT_NUMBER(BIT_NUMBER) (((BIT_NUMBER) & GPIO_PIN_MASK) != (uint32_t)0x00U)
 #define IS_PWR_GPIO(GPIO)                                                          \
     (((GPIO) == PWR_GPIO_A) || ((GPIO) == PWR_GPIO_B) || ((GPIO) == PWR_GPIO_C) || \
      ((GPIO) == PWR_GPIO_D) || ((GPIO) == PWR_GPIO_E) || ((GPIO) == PWR_GPIO_F) || \

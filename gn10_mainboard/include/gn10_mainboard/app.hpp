@@ -6,7 +6,14 @@ extern "C" {
 
 #include "main.h"
 
+/**
+ * @brief Initialize board application components.
+ */
 void setup();
+
+/**
+ * @brief Execute one application loop cycle.
+ */
 void loop();
 #ifdef __cplusplus
 }

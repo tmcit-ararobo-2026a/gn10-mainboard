@@ -223,18 +223,19 @@ typedef struct {
  */
 #define IS_EXTI_LINE(__EXTI_LINE__)                                                          \
     ((((__EXTI_LINE__) & ~(EXTI_PROPERTY_MASK | EXTI_REG_MASK | EXTI_PIN_MASK)) == 0x00U) && \
-     ((((__EXTI_LINE__)&EXTI_PROPERTY_MASK) == EXTI_DIRECT) ||                               \
-      (((__EXTI_LINE__)&EXTI_PROPERTY_MASK) == EXTI_CONFIG) ||                               \
-      (((__EXTI_LINE__)&EXTI_PROPERTY_MASK) == EXTI_GPIO)) &&                                \
+     ((((__EXTI_LINE__) & EXTI_PROPERTY_MASK) == EXTI_DIRECT) ||                             \
+      (((__EXTI_LINE__) & EXTI_PROPERTY_MASK) == EXTI_CONFIG) ||                             \
+      (((__EXTI_LINE__) & EXTI_PROPERTY_MASK) == EXTI_GPIO)) &&                              \
      (((__EXTI_LINE__) & (EXTI_REG_MASK | EXTI_PIN_MASK)) <                                  \
       (((EXTI_LINE_NB / 32u) << EXTI_REG_SHIFT) | (EXTI_LINE_NB % 32u))))
 
-#define IS_EXTI_MODE(__EXTI_LINE__) \
-    ((((__EXTI_LINE__)&EXTI_MODE_MASK) != 0x00U) && (((__EXTI_LINE__) & ~EXTI_MODE_MASK) == 0x00U))
+#define IS_EXTI_MODE(__EXTI_LINE__)                   \
+    ((((__EXTI_LINE__) & EXTI_MODE_MASK) != 0x00U) && \
+     (((__EXTI_LINE__) & ~EXTI_MODE_MASK) == 0x00U))
 
 #define IS_EXTI_TRIGGER(__EXTI_LINE__) (((__EXTI_LINE__) & ~EXTI_TRIGGER_MASK) == 0x00U)
 
-#define IS_EXTI_CONFIG_LINE(__EXTI_LINE__) (((__EXTI_LINE__)&EXTI_CONFIG) != 0x00U)
+#define IS_EXTI_CONFIG_LINE(__EXTI_LINE__) (((__EXTI_LINE__) & EXTI_CONFIG) != 0x00U)
 
 #define IS_EXTI_GPIO_PORT(__PORT__)                                                            \
     (((__PORT__) == EXTI_GPIOA) || ((__PORT__) == EXTI_GPIOB) || ((__PORT__) == EXTI_GPIOC) || \
