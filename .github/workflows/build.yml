@@ -29,9 +29,9 @@ concurrency:
 jobs:
   build:
     # project_name 未指定時はリポジトリ名をデフォルトとして使用する
+    name: Build ${{ github.event.inputs.project_name || github.event.repository.name }}
     env:
       PROJECT_NAME: ${{ github.event.inputs.project_name || github.event.repository.name }}
-    name: Build ${{ env.PROJECT_NAME }}
     runs-on: ubuntu-22.04
 
     steps:
