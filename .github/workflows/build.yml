@@ -1,0 +1,68 @@
+name: CI Build
+
+# main へのプッシュ・PR・手動実行でビルドチェックを行う
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Project name for build artifacts'
+        required: false
+        default: 'gn10-mainboard' # 各自プロジェクトの名前に変更してください
+        type: string
+
+# リポジトリ読み取りのみ許可
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+# 同一ブランチへの連続プッシュ時は古いジョブをキャンセルしてリソースを節約する
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
+jobs:
+  build:
+    name: Build ${{ env.PROJECT_NAME }}
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # 外部ライブラリ(gn10_can 等)をサブモジュールとして取得する
+        submodules: recursive
+
+    - name: Install Arm Toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build
+
+    # ビルドキャッシュ: ターゲットごとにキーを分けて他ターゲットのキャッシュと混在させない
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ env.PROJECT_NAME }}
+        variant: ccache
+
+    # CMakePresets.json の Release プリセットを使用してコンフィグ・ビルドする
+    - name: Configure CMake
+      run: cmake --preset Release
+
+    - name: Build
+      run: cmake --build --preset Release
+
+    # プリセット使用時はビルド出力が build/<preset-name>/ 以下に生成されるため再帰パターンで収集する
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware-${{ env.PROJECT_NAME }}
+        path: |
+          build/**/*.elf
