@@ -20,12 +20,11 @@ defaults:
 # ワークフロー全体のデフォルト権限を最小化する
 permissions: {}
 
-env:
-  PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
-
 jobs:
   build:
-    name: Build ${{ env.PROJECT_NAME }}
+    name: Build ${{ github.event.inputs.project_name || 'default-project' }}
+    env:
+      PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
     runs-on: ubuntu-22.04
     permissions:
       contents: read

@@ -27,11 +27,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
 jobs:
   build:
-    name: Build ${{ env.PROJECT_NAME }}
+    name: Build ${{ github.event.inputs.project_name || 'default-project' }}
+    env:
+      PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
     runs-on: ubuntu-22.04
 
     steps:
