@@ -5,6 +5,13 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Project name for build artifacts'
+        required: false
+        default: 'gn10-mainboard' # 各自プロジェクトの名前に変更してください
+        type: string
 
 defaults:
   run:
@@ -13,9 +20,12 @@ defaults:
 # ワークフロー全体のデフォルト権限を最小化する
 permissions: {}
 
+env:
+  PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
+
 jobs:
   build:
-    name: Build gn10-mainboard
+    name: Build ${{ env.PROJECT_NAME }}
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -35,7 +45,7 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: release-gn10-mainboard
+        key: release-${{ env.PROJECT_NAME }}
         variant: ccache
 
     # CMakePresets.json の Release プリセットを使用してコンフィグ・ビルドする
@@ -50,7 +60,7 @@ jobs:
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: firmware-gn10-mainboard
+        name: firmware-${{ env.PROJECT_NAME }}
         path: build/**/*.elf
 
   release:

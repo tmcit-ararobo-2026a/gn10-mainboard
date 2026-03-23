@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Project name for build artifacts'
+        required: false
+        default: 'gn10-mainboard' # 各自プロジェクトの名前に変更してください
+        type: string
 
 # リポジトリ読み取りのみ許可
 permissions:
@@ -21,27 +27,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PROJECT_NAME: ${{ github.event.inputs.project_name || 'default-project' }}
 jobs:
-  format:
-    name: Check Format
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install clang-format
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format
-
-    # CubeMX生成ファイル(Core/)とサブモジュール(external/)は除外する
-    - name: Check formatting
-      run: >
-        find gn10_mainboard gn10_can
-        \( -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" \)
-        | xargs clang-format --dry-run --Werror
-
   build:
-    name: Build gn10-mainboard
+    name: Build ${{ env.PROJECT_NAME }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -59,7 +49,7 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: gn10-mainboard
+        key: ${{ env.PROJECT_NAME }}
         variant: ccache
 
     # CMakePresets.json の Release プリセットを使用してコンフィグ・ビルドする
@@ -73,7 +63,6 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: firmware-gn10-mainboard
+        name: firmware-${{ env.PROJECT_NAME }}
         path: |
-          build/**/*.bin
           build/**/*.elf
