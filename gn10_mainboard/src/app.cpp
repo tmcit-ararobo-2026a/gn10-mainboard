@@ -34,7 +34,7 @@ gn10_can::devices::MotorConfig motor1_config;
 gn10_can::drivers::DriverSTM32FDCAN can2_driver(&hfdcan2);
 gn10_can::CANBus can2_bus(can2_driver);
 
-robomaster::robomas_can rm_can(can2_bus);
+robomaster::RobomasCAN rm_can(can2_bus);
 
 float output = 0.0f;
 float accel  = 0.001f;
@@ -74,10 +74,8 @@ void loop()
 
     motor1.set_target(output);
     update_heartbeat_led();
-
+    rm_can.send_current(0, 20, 0, 0, 0);
     // robomas用の
-    rm_can.set_current_group1(1000, 0, 0, 0);
-    rm_can.send();
     HAL_Delay(10);
 }
 extern "C" {

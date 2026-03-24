@@ -7,17 +7,9 @@
 #define SEND_CANID_1_4 0x200
 #define SEND_CANID_5_8 0x1FF
 
-enum receive_id {
-    motor_1 = 0x201,
-    motor_2 = 0x202,
-    motor_3 = 0x203,
-    motor_4 = 0x204,
-    motor_5 = 0x205,
-    motor_6 = 0x206,
-    motor_7 = 0x207,
-    motor_8 = 0x208
-};
+#define A_CONVERSION
 
+// 受信したデータを格納する構造体
 struct MotorFeedback {
     uint16_t angle;
     int16_t speed;
@@ -26,48 +18,62 @@ struct MotorFeedback {
     uint8_t spare;
 } __attribute__((__packed__));
 
-struct MotorCurrent_group1 {
-    int16_t motor1_current = 0;
-    int16_t motor2_current = 0;
-    int16_t motor3_current = 0;
-    int16_t motor4_current = 0;
-} __attribute__((__packed__));
-
-struct MotorCurrent_group2 {
-    int16_t motor5_current = 0;
-    int16_t motor6_current = 0;
-    int16_t motor7_current = 0;
-    int16_t motor8_current = 0;
+// motorに送る電流値を格納する配列
+struct MotorCurrent {
+    int16_t current[4];
 } __attribute__((__packed__));
 
 namespace robomaster {
-class robomas_can
+/**
+ * @brief C620/C610とのCAN通信用クラス
+ */
+class RobomasCAN
 {
 private:
     gn10_can::CANBus& bus_;
     gn10_can::CANFrame frame;
-    MotorCurrent_group1 current_1;
-    MotorCurrent_group2 current_2;
+    MotorCurrent motor_current_[2];
 
 public:
     MotorFeedback feedback[8];
-    robomas_can(gn10_can::CANBus& bus_);
+    /**
+     * @brief C620/C610とのCAN通信用クラスのコンストラクタ
+     */
+    RobomasCAN(gn10_can::CANBus& bus_);
+
+    /**
+     * @brief escにデータを送る関数
+     * @details これはsend_current関数に組み込まれているので気にしなくていいです
+     */
     void send_data(uint16_t can_id, uint8_t* data);
+
+    /**
+     * @brief escからのfeedbackを受け取る関数
+     * @param can_id feedback先のESCのid
+     * @param data うけっとたデータ
+     */
     void receive_data(uint16_t can_id, uint8_t data[8]);
+
+    /**
+     * @brief 受け取ったデータを処理する関数です
+     * @details これはreceive_dataに組み込まれています。受け取ったデータを処理したいなら
+     * この関数に記載してください。
+     *
+     */
     void process_data(MotorFeedback* feedback);
-    void send();
-    void set_current_group1(
+
+    /**
+     * @brief 目標の電流値を設定し、ESCに送信する
+     * @param group_num 0 : (motor1-4) 1 : (motor5-8)
+     * @param M3508_current M3508の場合　最大:20 最小20
+     * @param M2006_current M2006の場合　最大:10 最小10
+     */
+    void send_current(
+        uint8_t group_num,
         int16_t motor1_current,
         int16_t motor2_current,
         int16_t motor3_current,
         int16_t motor4_current
-    );
-
-    void set_current_group2(
-        int16_t motor5_current,
-        int16_t motor6_current,
-        int16_t motor7_current,
-        int16_t motor8_current
     );
 };
 }  // namespace robomaster

@@ -5,9 +5,9 @@
 namespace robomaster {
 
 // コンストラクタの引数にbusを設定することによって、他のバスとかぶらないようにする。
-robomas_can::robomas_can(gn10_can::CANBus& bus) : bus_(bus) {}
+RobomasCAN::RobomasCAN(gn10_can::CANBus& bus) : bus_(bus) {}
 
-void robomas_can::send_data(uint16_t can_id, uint8_t* data)
+void RobomasCAN::send_data(uint16_t can_id, uint8_t* data)
 {
     frame.id  = can_id;
     frame.dlc = 8;  // robomasは8byte固定
@@ -17,77 +17,51 @@ void robomas_can::send_data(uint16_t can_id, uint8_t* data)
     bus_.send_frame(frame);
 }
 
-void robomas_can::send()
+void RobomasCAN::receive_data(uint16_t can_id, uint8_t data[8])
 {
-    send_data(SEND_CANID_1_4, reinterpret_cast<uint8_t*>(&current_1));
-
-    send_data(SEND_CANID_5_8, reinterpret_cast<uint8_t*>(&current_2));
+    uint8_t motor_num;
+    motor_num = (can_id & 0x0F) - 1;
+    memcpy(&feedback[motor_num], data, 8);
+    process_data(&feedback[motor_num]);
 }
 
-void robomas_can::receive_data(uint16_t can_id, uint8_t data[8])
+void RobomasCAN::process_data(MotorFeedback* feedback)
 {
-    switch (can_id) {
-        case motor_1:
-            memcpy(&feedback[0], data, 8);
-            process_data(&feedback[0]);
-            break;
-        case motor_2:
-            memcpy(&feedback[1], data, 8);
-            process_data(&feedback[1]);
-            break;
-        case motor_3:
-            memcpy(&feedback[2], data, 8);
-            process_data(&feedback[2]);
-            break;
-        case motor_4:
-            memcpy(&feedback[3], data, 8);
-            process_data(&feedback[3]);
-            break;
-        case motor_5:
-            memcpy(&feedback[4], data, 8);
-            process_data(&feedback[4]);
-            break;
-        case motor_6:
-            memcpy(&feedback[5], data, 8);
-            process_data(&feedback[5]);
-            break;
-        case motor_7:
-            memcpy(&feedback[6], data, 8);
-            process_data(&feedback[6]);
-            break;
-        case motor_8:
-            memcpy(&feedback[7], data, 8);
-            process_data(&feedback[7]);
-            break;
-        default:
-            break;
-    }
-}
-
-void robomas_can::process_data(MotorFeedback* feedback)
-{
+    // C620はビックエンディアンなのでリトルエンディアンに変換
+    // ここは変えないで！！
     feedback->angle   = __builtin_bswap16(feedback->angle);
     feedback->speed   = __builtin_bswap16(feedback->speed);
     feedback->current = __builtin_bswap16(feedback->current);
+    // この下から処理
 }
 
-void robomas_can::set_current_group1(
-    int16_t motor1_current, int16_t motor2_current, int16_t motor3_current, int16_t motor4_current
+void RobomasCAN::send_current(
+    uint8_t group_num,
+    int16_t motor1_current,
+    int16_t motor2_current,
+    int16_t motor3_current,
+    int16_t motor4_current
 )
 {
-    current_1.motor1_current = __builtin_bswap16(motor1_current);
-    current_1.motor2_current = __builtin_bswap16(motor2_current);
-    current_1.motor3_current = __builtin_bswap16(motor3_current);
-    current_1.motor4_current = __builtin_bswap16(motor4_current);
-}
+    // 型変換
+    motor1_current = (static_cast<int16_t>(motor1_current * 819.2));
+    motor2_current = (static_cast<int16_t>(motor2_current * 819.2));
+    motor3_current = (static_cast<int16_t>(motor3_current * 819.2));
+    motor4_current = (static_cast<int16_t>(motor4_current * 819.2));
 
-void robomas_can::set_current_group2(
-    int16_t motor5_current, int16_t motor6_current, int16_t motor7_current, int16_t motor8_current
-)
-{
-    current_2.motor5_current = __builtin_bswap16(motor5_current);
-    current_2.motor6_current = __builtin_bswap16(motor6_current);
-    current_2.motor7_current = __builtin_bswap16(motor7_current);
-    current_2.motor8_current = __builtin_bswap16(motor8_current);
+    // stmはリトルエンディアンなのでビッグエンディアンに変換
+    if (group_num < 2) {
+        motor_current_[group_num].current[0] = __builtin_bswap16(motor1_current);
+        motor_current_[group_num].current[1] = __builtin_bswap16(motor2_current);
+        motor_current_[group_num].current[2] = __builtin_bswap16(motor3_current);
+        motor_current_[group_num].current[3] = __builtin_bswap16(motor4_current);
+
+        // packetしたデータを送信
+        if (group_num == 0) {
+            send_data(SEND_CANID_1_4, reinterpret_cast<uint8_t*>(&motor_current_[0]));
+        } else {
+            send_data(SEND_CANID_5_8, reinterpret_cast<uint8_t*>(&motor_current_[1]));
+        }
+    }
 }
 }  // namespace robomaster
