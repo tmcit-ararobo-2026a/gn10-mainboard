@@ -21,13 +21,13 @@ class RobomasCAN
 private:
     gn10_can::CANBus& bus_;
     gn10_can::CANFrame frame_;
-    MotorCurrent current_[2];
+    MotorCurrent motor_current_[2];
 
 public:
     /**
      * @brief CAN通信用クラスのコンストラクタ
      */
-    RobomasCAN(gn10_can::CANBus& bus_);
+    RobomasCAN(gn10_can::CANBus& bus);
 
     virtual ~RobomasCAN() = default;
 
@@ -36,9 +36,14 @@ public:
      *
      * @param motor_number 何番目のロボマスモーターか判断する。
      * 値域は1-8。
+     * @return mottor_current_[x].current[y] 電流値の登録完了
+     * @return 0
      */
-    virtual int16_t get_current(uint8_t motor_number) = 0;
+    int16_t get_current(uint8_t motor_number) const;
 
+    void set_current(uint8_t motor_number, int16_t current_value);
+
+    uint8_t number_setting();
     /**
      * @brief escからのfeedbackを受け取る関数
      * @param can_id feedback先のESCのid
@@ -50,6 +55,6 @@ public:
      * @brief escにデータを送る関数
      * @details get_currentで取得した電流値を送信します。
      */
-    void send_data();
+    void send_data(uint16_t can_id);
 };
 }  // namespace robomas_can
