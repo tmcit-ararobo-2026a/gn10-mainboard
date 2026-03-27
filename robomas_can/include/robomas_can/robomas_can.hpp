@@ -12,7 +12,7 @@ namespace robomas_can {
 
 // motorに送る電流値を格納する配列
 struct MotorCurrent {
-    int16_t current[4];
+    float current[4];
 } __attribute__((__packed__));
 
 // c610とc620に対応するための基底クラス
@@ -23,12 +23,13 @@ private:
     gn10_can::CANFrame frame_;
     uint8_t cun_bus_data_[8];
     MotorCurrent motor_current_[2];
+    float current_conversion_;
 
 public:
     /**
      * @brief CAN通信用クラスのコンストラクタ
      */
-    RobomasCAN(gn10_can::CANBus& bus, float current_conversion, float max_current);
+    RobomasCAN(gn10_can::CANBus& bus, float current_conversion);
 
     virtual ~RobomasCAN() = default;
 
