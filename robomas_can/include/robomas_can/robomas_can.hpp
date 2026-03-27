@@ -10,9 +10,6 @@ namespace robomas_can {
 #define SEND_CANID_1_4 0x200
 #define SEND_CANID_5_8 0x1FF
 
-// 電流変換用定数
-#define AMPS_CONVERSION 819.2f
-
 // motorに送る電流値を格納する配列
 struct MotorCurrent {
     int16_t current[4];
@@ -24,13 +21,14 @@ class RobomasCAN
 private:
     gn10_can::CANBus& bus_;
     gn10_can::CANFrame frame_;
+    uint8_t cun_bus_data_[8];
     MotorCurrent motor_current_[2];
 
 public:
     /**
      * @brief CAN通信用クラスのコンストラクタ
      */
-    RobomasCAN(gn10_can::CANBus& bus);
+    RobomasCAN(gn10_can::CANBus& bus, float current_conversion, float max_current);
 
     virtual ~RobomasCAN() = default;
 
@@ -50,7 +48,7 @@ public:
      * @param　motor_number 何話目のロボマスモーターか
      * @param current_value 電流の値。
      */
-    virtual void set_current(uint8_t motor_number, float current_value) = 0;
+    void set_current(uint8_t motor_number, float current_value);
 
     /**
      * @brief escからのfeedbackを受け取る関数
