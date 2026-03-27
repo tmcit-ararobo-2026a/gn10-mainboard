@@ -10,6 +10,9 @@ namespace robomas_can {
 #define SEND_CANID_1_4 0x200
 #define SEND_CANID_5_8 0x1FF
 
+// 電流変換用定数
+#define AMPS_CONVERSION 819.2f
+
 // motorに送る電流値を格納する配列
 struct MotorCurrent {
     int16_t current[4];
@@ -36,25 +39,30 @@ public:
      *
      * @param motor_number 何番目のロボマスモーターか判断する。
      * 値域は1-8。
-     * @return mottor_current_[x].current[y] 電流値の登録完了
-     * @return 0
+     * @return 成功：設定された電流値
+     * @return 失敗：０
      */
     int16_t get_current(uint8_t motor_number) const;
 
-    void set_current(uint8_t motor_number, int16_t current_value);
+    /**
+     * @brief MotorCurrent用のsetter関数　電流値の値を代入します
+     *
+     * @param　motor_number 何話目のロボマスモーターか
+     * @param current_value 電流の値。
+     */
+    virtual void set_current(uint8_t motor_number, float current_value) = 0;
 
-    uint8_t number_setting();
     /**
      * @brief escからのfeedbackを受け取る関数
      * @param can_id feedback先のESCのid
      * @param data 受け取ったデータ
      */
-    void receive_data(uint16_t can_id, uint8_t data[8]);
+    virtual void receive_data(uint16_t can_id, uint8_t data[8]) = 0;
 
     /**
      * @brief escにデータを送る関数
      * @details get_currentで取得した電流値を送信します。
      */
-    void send_data(uint16_t can_id);
+    void send_data(uint16_t can_id, uint8_t* data);
 };
 }  // namespace robomas_can
