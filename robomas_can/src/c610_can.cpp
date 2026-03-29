@@ -18,19 +18,19 @@ void C610CAN::receive_data(uint16_t can_id, uint8_t data[8])
 
 uint16_t C610CAN::get_feedback_angle(uint8_t motor_number) const
 {
-    if (motor_number < 1 || motor_number > 8) return 0;
-    return feedback_[motor_number - 1].angle;
+    if (motor_number > 7) return 0;
+    return feedback_[motor_number].angle;
 }
 
 int16_t C610CAN::get_feedback_speed(uint8_t motor_number) const
 {
-    if (motor_number < 1 || motor_number > 8) return 0;
-    return feedback_[motor_number - 1].speed_rpm;
+    if (motor_number > 7) return 0;
+    return feedback_[motor_number].speed_rpm;
 }
 
 int16_t C610CAN::get_feedback_current(uint8_t motor_number) const
 {
-    if (motor_number < 1 || motor_number > 8) return 0;
-    return feedback_[motor_number - 1].current;
+    if (motor_number > 7) return 0;
+    return feedback_[motor_number].current;
 }
 }  // namespace robomas_can

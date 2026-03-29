@@ -7,9 +7,20 @@ namespace robomas_can {
 constexpr int SEND_CANID_1_4 = 0x200;
 constexpr int SEND_CANID_5_8 = 0x1FF;
 
+// c610電流変換定数
+constexpr float C610_CURRENT_CONVERSION = 100.0f;
+
+// c620電流変換用定数
+constexpr float C620_CURRENT_CONVERSION = 819.2f;
+
 // motorに送る電流値を格納する配列
 struct MotorCurrent {
     float current[4];
+} __attribute__((__packed__));
+
+// motorのtypeを格納する配列。
+struct motor_type {
+    uint8_t motor_type : 1;
 } __attribute__((__packed__));
 
 // c610とc620に対応するための基底クラス
@@ -19,7 +30,13 @@ private:
     gn10_can::CANBus& bus_;
     gn10_can::CANFrame frame_;
     MotorCurrent motor_current_[2];
-    float current_conversion_;
+    float current_conversion_[8];
+
+    /**
+     * @brief escにデータを送る関数
+     * @details set_currentで設定した電流値を送信します。これは組み込まれている関数です
+     */
+    void send_currents(uint16_t can_id, uint8_t* data);
 
 public:
     /**
@@ -27,7 +44,7 @@ public:
      *
      * @param current_conversion 電流変換定数
      */
-    RobomasCAN(gn10_can::CANBus& bus, float current_conversion);
+    RobomasCAN(gn10_can::CANBus& bus);
 
     virtual ~RobomasCAN() = default;
 
@@ -35,31 +52,44 @@ public:
      * @brief MotorCurrent用のget関数
      *
      * @param motor_number 何番目のロボマスモーターか判断する。
-     * 値域は1-8。
+     * 値域は0-7。
      * @return 成功：設定された電流値
      * @return 失敗：０
      */
     float get_current(uint8_t motor_number) const;
 
     /**
+     * @brief M2006かM3508か選ぶ
+     *
+     * @param motor_number 値域：0~7
+     * @param motor_type falseがM3508　trueがM2006
+     */
+    void set_motor_type(uint8_t motor_number, bool motor_type);
+
+    /**
      * @brief MotorCurrent用のsetter関数　電流値の値を代入します
      *
-     * @param　motor_number 何話目のロボマスモーターか
-     * @param current_value 電流の値。
+     * @param　motor_number 何話目のロボマスモーターか 値域：0~3
+     * @param current 電流の値。
      */
-    void set_current(uint8_t motor_number, float current_value);
+    void set_current_can1(
+        float motor0_current, float motor1_current, float motor2_current, float motor3_current
+    );
 
+    /**
+     * @brief MotorCurrent用のsetter関数　電流値の値を代入します
+     *
+     * @param　motor_number 何話目のロボマスモーターか 値域：4~7
+     * @param current 電流の値。
+     */
+    void set_current_can2(
+        float motor4_current, float motor5_current, float motor6_current, float motor7_current
+    );
     /**
      * @brief escからのfeedbackを受け取る関数
      * @param can_id feedback先のESCのid
      * @param data 受け取ったデータ
      */
     virtual void receive_data(uint16_t can_id, uint8_t data[8]) = 0;
-
-    /**
-     * @brief escにデータを送る関数
-     * @details get_currentで取得した電流値を送信します。
-     */
-    void send_data(uint16_t can_id);
 };
 }  // namespace robomas_can

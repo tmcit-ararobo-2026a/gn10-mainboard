@@ -12,8 +12,6 @@ struct c610_feedback {
     uint16_t reserved;  // 空きデータ
 } __attribute__((__packed__));
 
-// c610電流変換定数
-constexpr float C610_CURRENT_CONVERSION = 100.0f;
 }  // namespace c610
 
 class C610CAN : public RobomasCAN
@@ -24,7 +22,7 @@ private:
 
 public:
     // コンストラクタ
-    C610CAN(gn10_can::CANBus& bus) : RobomasCAN(bus, c610::C610_CURRENT_CONVERSION) {}
+    C610CAN(gn10_can::CANBus& bus) : RobomasCAN(bus) {}
 
     // 純粋仮想関数の実装
     void receive_data(uint16_t can_id, uint8_t data[8]) override;
@@ -32,7 +30,7 @@ public:
     /**
      * @brief feedbackのangleを読み取るgetter関数。
      *
-     * @param motor_number 読みたい角度のデータがあるモーター番号 値域:1~8
+     * @param motor_number 読みたい角度のデータがあるモーター番号 値域:0~7
      *
      * @return 値域：0-8192 右の範囲内の角度
      */
@@ -41,7 +39,7 @@ public:
     /**
      * @brief feedbackのspeedを読み取るgetter関数。
      *
-     * @param motor_number 読みたい回転速度のデータがあるモーター番号 値域:1~8
+     * @param motor_number 読みたい回転速度のデータがあるモーター番号 値域:0~7
      *
      * @return 値域:-32768~32768 単位:rpm の回転速度
      */
@@ -50,7 +48,7 @@ public:
     /**
      * @brief feedbackのcurrentを読み取るgetter関数。
      *
-     * @param motor_number 読みたいトルク電流値のデータがあるモーター番号 値域:1~8
+     * @param motor_number 読みたいトルク電流値のデータがあるモーター番号 値域:0~7
      *
      * @return 値域：-16384~16384
      */
