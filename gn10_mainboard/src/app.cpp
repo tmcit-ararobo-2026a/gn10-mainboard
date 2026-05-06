@@ -6,7 +6,6 @@
 #include "fdcan.h"
 #include "gn10_can/core/can_bus.hpp"
 #include "gn10_can/devices/motor_driver_client.hpp"
-#include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/servo_motor_client.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
@@ -47,8 +46,6 @@ gn10_can::devices::ServoMotorClient servo_motor(can3_bus, 0);
 gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
     fdcan2_bus, 0
 );
-gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
-gn10_can::devices::power_manager::Config power_manager_config;
 
 FourWheelOmni omni(0.3f, 0.065f);
 
@@ -112,7 +109,6 @@ void setup()
     pid_wheel_br.update_config(pid_config_wheel_br);
 
     servo_motor.set_init(1000, 1200);
-    power_manager.set_init(power_manager_config);
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
 
