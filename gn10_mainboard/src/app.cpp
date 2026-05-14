@@ -107,8 +107,8 @@ void loop()
     if (robot_control_hub.get_command(operation)) {
     }
     wheel_angular_velocity_f  = operation.wheel_front;
-    wheel_angular_velocity_br = operation.wheel_back_right;
     wheel_angular_velocity_bl = operation.wheel_back_left;
+    wheel_angular_velocity_br = operation.wheel_back_right;
 
     wheel_angular_velocity_f_feedback =
         2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(0) / 60.0f / 19.0f;
