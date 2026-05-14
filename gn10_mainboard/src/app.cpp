@@ -130,7 +130,7 @@ void loop()
     );
 
     if (operation.belt_throw) {
-        servo_motor.set_angle_rad(M_PI);
+        servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
     } else {
         servo_motor.set_angle_rad(0);
     }
