@@ -21,9 +21,14 @@ struct feedback_data_t {
 
 struct operation_data_t {
     uint16_t header;  // ヘッダー
-    float vx;         // x軸方向の速度[m/s]
-    float vy;         // y軸方向の速度[m/s]
-    float omega;      // 回転速度[rad/s]
-    uint8_t buttons;
-    uint8_t reserved;
+    float wheel_front;
+    float wheel_back_left;
+    float wheel_back_right;
+    float belt_velocity;
+    float arm_horizontal;
+    float arm_vertical;
+    bool arm_hold;
+    bool belt_throw;
+    bool collect;
+    uint8_t reserved[3];
 } __attribute__((__packed__));

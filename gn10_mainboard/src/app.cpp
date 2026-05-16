@@ -52,32 +52,22 @@ gn10_can::devices::power_manager::Config power_manager_config;
 
 FourWheelOmni omni(0.3f, 0.065f);
 
-gn10_motor::PIDConfig<float> pid_config_wheel_fr;
-gn10_motor::PIDConfig<float> pid_config_wheel_fl;
+gn10_motor::PIDConfig<float> pid_config_wheel_f;
 gn10_motor::PIDConfig<float> pid_config_wheel_bl;
 gn10_motor::PIDConfig<float> pid_config_wheel_br;
 
-gn10_motor::PID<float> pid_wheel_fr(pid_config_wheel_fr);
-gn10_motor::PID<float> pid_wheel_fl(pid_config_wheel_fl);
+gn10_motor::PID<float> pid_wheel_f(pid_config_wheel_f);
 gn10_motor::PID<float> pid_wheel_bl(pid_config_wheel_bl);
 gn10_motor::PID<float> pid_wheel_br(pid_config_wheel_br);
 
 operation_data_t operation;
-float wheel_angular_velocity_fr = 0.0f;
-float wheel_angular_velocity_fl = 0.0f;
+float wheel_angular_velocity_f  = 0.0f;
 float wheel_angular_velocity_bl = 0.0f;
 float wheel_angular_velocity_br = 0.0f;
 
-float wheel_angular_velocity_fr_feedback = 0.0f;
-float wheel_angular_velocity_fl_feedback = 0.0f;
+float wheel_angular_velocity_f_feedback  = 0.0f;
 float wheel_angular_velocity_bl_feedback = 0.0f;
 float wheel_angular_velocity_br_feedback = 0.0f;
-
-// buttons config
-bool cross    = false;
-bool circle   = false;
-bool square   = false;
-bool triangle = false;
 
 /**
  * @brief Initialize CAN and mainboard application state.
@@ -88,23 +78,16 @@ void setup()
     fdcan2_driver.init();
     can3_driver.init();
 
-    pid_config_wheel_fr.kp           = 0.5f;
-    pid_config_wheel_fr.ki           = 0.0f;
-    pid_config_wheel_fr.kd           = 0.0f;
-    pid_config_wheel_fr.output_limit = 20.0f;
-    pid_wheel_fr.update_config(pid_config_wheel_fr);
-    pid_config_wheel_fl.kp           = 0.5f;
-    pid_config_wheel_fl.ki           = 0.0f;
-    pid_config_wheel_fl.kd           = 0.0f;
-    pid_config_wheel_fl.output_limit = 20.0f;
-    pid_wheel_fl.update_config(pid_config_wheel_fl);
-    // pid_config_wheel_bl.kp           = 0.35f;
+    pid_config_wheel_f.kp           = 0.5f;
+    pid_config_wheel_f.ki           = 0.0f;
+    pid_config_wheel_f.kd           = 0.0f;
+    pid_config_wheel_f.output_limit = 20.0f;
+    pid_wheel_f.update_config(pid_config_wheel_f);
     pid_config_wheel_bl.kp           = 0.5f;
     pid_config_wheel_bl.ki           = 0.0f;
     pid_config_wheel_bl.kd           = 0.0f;
     pid_config_wheel_bl.output_limit = 20.0f;
     pid_wheel_bl.update_config(pid_config_wheel_bl);
-    // pid_config_wheel_br.kp           = 0.35f;
     pid_config_wheel_br.kp           = 0.5f;
     pid_config_wheel_br.ki           = 0.0f;
     pid_config_wheel_br.kd           = 0.0f;
@@ -123,60 +106,36 @@ void loop()
 {
     if (robot_control_hub.get_command(operation)) {
     }
-    omni.convert(operation.vx, operation.vy, operation.omega, 0.0f);
-    omni.getWheelAngularVelocity(
-        &wheel_angular_velocity_fr,
-        &wheel_angular_velocity_fl,
-        &wheel_angular_velocity_bl,
-        &wheel_angular_velocity_br
-    );
+    wheel_angular_velocity_f  = operation.wheel_front;
+    wheel_angular_velocity_bl = operation.wheel_back_left;
+    wheel_angular_velocity_br = operation.wheel_back_right;
 
-    wheel_angular_velocity_fr_feedback =
+    wheel_angular_velocity_f_feedback =
         2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(0) / 60.0f / 19.0f;
-    wheel_angular_velocity_fl_feedback =
-        2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(1) / 60.0f / 19.0f;
     wheel_angular_velocity_bl_feedback =
-        2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(2) / 60.0f / 19.0f;
+        2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(1) / 60.0f / 19.0f;
     wheel_angular_velocity_br_feedback =
-        2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(3) / 60.0f / 19.0f;
+        2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(2) / 60.0f / 19.0f;
 
     float wheel_currents[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     wheel_currents[0] =
-        pid_wheel_fr.update(wheel_angular_velocity_fr, wheel_angular_velocity_fr_feedback, 0.001f);
+        pid_wheel_f.update(wheel_angular_velocity_f, wheel_angular_velocity_f_feedback, 0.001f);
     wheel_currents[1] =
-        pid_wheel_fl.update(wheel_angular_velocity_fl, wheel_angular_velocity_fl_feedback, 0.001f);
-    wheel_currents[2] =
         pid_wheel_bl.update(wheel_angular_velocity_bl, wheel_angular_velocity_bl_feedback, 0.001f);
-    wheel_currents[3] =
+    wheel_currents[2] =
         pid_wheel_br.update(wheel_angular_velocity_br, wheel_angular_velocity_br_feedback, 0.001f);
 
     wheel_esc.set_current_can1(
         wheel_currents[0], wheel_currents[1], wheel_currents[2], wheel_currents[3]
     );
 
-    // cross    = (operation.buttons >> 1) & 1;
-    // circle   = (operation.buttons >> 2) & 1;
-    // triangle = (operation.buttons >> 3) & 1;
-
-    if ((square = operation.buttons & 1)) {
-        servo_motor.set_angle_rad(M_PI);
+    if (operation.belt_throw) {
+        servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
     } else {
         servo_motor.set_angle_rad(0);
     }
 
-    /*
-    if (cross) {
-        servo_motor.set_angle_rad(M_PI);
-    }
-    if (circle) {
-        servo_motor.set_angle_rad(0);
-    }
-    if (triangle) {
-        servo_motor.set_angle_rad(0);
-    }
-    */
     update_heartbeat_led();
-    // robomas用の
     HAL_Delay(1);
 }
 extern "C" {
