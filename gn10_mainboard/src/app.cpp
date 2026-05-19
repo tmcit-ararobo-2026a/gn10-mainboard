@@ -12,6 +12,8 @@
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/four_wheel_omni.hpp"
 #include "gn10_mainboard/pid.hpp"
+#include "gn10_mainboard/vesc_can.hpp"
+#include "robomas_can/c610_can.hpp"
 #include "robomas_can/c620_can.hpp"
 #include "wiznet_ether/robot_ethernet.hpp"
 #include "wiznet_ether/serial_printf.hpp"
@@ -37,13 +39,15 @@ void update_heartbeat_led()
 
 gn10_can::drivers::DriverSTM32FDCAN can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
-gn10_can::drivers::DriverSTM32FDCAN can3_driver(&hfdcan3);
+// gn10_can::drivers::DriverSTM32FDCAN can3_driver(&hfdcan3);
 
 gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
-gn10_can::CANBus can3_bus(can3_driver);
+// gn10_can::CANBus can3_bus(can3_driver);
 
 robomas_can::C620CAN wheel_esc(can1_driver);
-gn10_can::devices::ServoMotorClient servo_motor(can3_bus, 0);
+robomas_can::C620CAN hand_esc(can1_driver);
+
+// gn10_can::devices::ServoMotorClient servo_motor(can3_bus, 0);
 gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
     fdcan2_bus, 0
 );
@@ -51,6 +55,7 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::power_manager::Config power_manager_config;
 
 FourWheelOmni omni(0.3f, 0.065f);
+VescCAN vesc;
 
 gn10_motor::PIDConfig<float> pid_config_wheel_f;
 gn10_motor::PIDConfig<float> pid_config_wheel_bl;
@@ -76,7 +81,7 @@ void setup()
 {
     can1_driver.init();
     fdcan2_driver.init();
-    can3_driver.init();
+    // can3_driver.init();
 
     pid_config_wheel_f.kp           = 0.5f;
     pid_config_wheel_f.ki           = 0.0f;
@@ -94,7 +99,7 @@ void setup()
     pid_config_wheel_br.output_limit = 20.0f;
     pid_wheel_br.update_config(pid_config_wheel_br);
 
-    servo_motor.set_init(1000, 1200);
+    // servo_motor.set_init(1000, 1200);
     power_manager.set_init(power_manager_config);
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
@@ -130,10 +135,18 @@ void loop()
     );
 
     if (operation.belt_throw) {
-        servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
+        // servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
+        vesc.comm_can_set_current(43, -1.0f);
+        vesc.comm_can_set_duty(43, -1.0f);
     } else {
-        servo_motor.set_angle_rad(0);
+        vesc.comm_can_set_current(43, 0.0f);
+        vesc.comm_can_set_duty(43, 0.0f);
+        // servo_motor.set_angle_rad(0);
     }
+
+    // test
+    vesc.comm_can_set_current(43, -1.0f);
+    vesc.comm_can_set_duty(43, -1.0f);
 
     update_heartbeat_led();
     HAL_Delay(1);
@@ -152,7 +165,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     } else if (hfdcan->Instance == hfdcan2.Instance) {
         fdcan2_bus.update();
     } else if (hfdcan->Instance == hfdcan3.Instance) {
-        can3_bus.update();
+        // can3_bus.update();
     }
 }
 }
