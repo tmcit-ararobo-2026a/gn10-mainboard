@@ -4,6 +4,7 @@ add_library(gn10_mainboard STATIC
     src/app.cpp
     src/mecanum_wheel.cpp
     src/fdcan_driver.cpp
+    src/vesc_can.cpp
     ${CMAKE_SOURCE_DIR}/gn10_can/drivers/stm32_fdcan/driver_stm32_fdcan.cpp
 )
 
