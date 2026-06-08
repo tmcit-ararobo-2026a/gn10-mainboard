@@ -45,7 +45,9 @@ gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
 // gn10_can::CANBus can3_bus(can3_driver);
 
 robomas_can::C620CAN wheel_esc(can1_driver);
-robomas_can::C620CAN hand_esc(can1_driver);
+gn10_can::CANBus can1_bus(can1_driver);
+
+gn10_can::devices::MotorDriverClient motor(can1_bus, 0);
 
 // gn10_can::devices::ServoMotorClient servo_motor(can3_bus, 0);
 gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
@@ -53,6 +55,7 @@ gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robo
 );
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::power_manager::Config power_manager_config;
+gn10_can::devices::MotorConfig motor_config;
 
 FourWheelOmni omni(0.3f, 0.065f);
 VescCAN vesc;
@@ -81,6 +84,11 @@ void setup()
 {
     can1_driver.init();
     fdcan2_driver.init();
+    vesc.init();
+
+    motor_config.set_accel_ratio(1.0f);
+    motor_config.set_max_duty_ratio(1.0f);
+    motor.set_init(motor_config);
     // can3_driver.init();
 
     pid_config_wheel_f.kp           = 0.5f;
@@ -123,6 +131,30 @@ void loop()
         2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(2) / 60.0f / 19.0f;
 
     float wheel_currents[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    /*
+    if (operation.arm_horizontal) {
+        c610_current = 10000;
+    } else {
+        c610_current = 0.0f;
+    }*/
+
+    if (operation.belt_throw) {
+        // servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
+        vesc.comm_can_set_current(43, -1.2f);
+        vesc.comm_can_set_duty(43, -1.2f);
+
+    } else {
+        vesc.comm_can_set_current(43, 0.0f);
+        vesc.comm_can_set_duty(43, 0.0f);
+
+        //  servo_motor.set_angle_rad(0);
+    }
+
+    if (operation.arm_horizontal || operation.arm_vertical) {
+        HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+    }
+
     wheel_currents[0] =
         pid_wheel_f.update(wheel_angular_velocity_f, wheel_angular_velocity_f_feedback, 0.001f);
     wheel_currents[1] =
@@ -134,19 +166,11 @@ void loop()
         wheel_currents[0], wheel_currents[1], wheel_currents[2], wheel_currents[3]
     );
 
-    if (operation.belt_throw) {
-        // servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
-        vesc.comm_can_set_current(43, -1.0f);
-        vesc.comm_can_set_duty(43, -1.0f);
+    if (operation.collect) {
+        motor.set_target(1.0f);
     } else {
-        vesc.comm_can_set_current(43, 0.0f);
-        vesc.comm_can_set_duty(43, 0.0f);
-        // servo_motor.set_angle_rad(0);
+        motor.set_target(0.0f);
     }
-
-    // test
-    vesc.comm_can_set_current(43, -1.0f);
-    vesc.comm_can_set_duty(43, -1.0f);
 
     update_heartbeat_led();
     HAL_Delay(1);
