@@ -175,6 +175,8 @@ void loop()
     } else {
         motor.set_target(0.0f);
     }
+    update_heartbeat_led();
+    HAL_Delay(1);
     for (size_t i = 0; i < 8; i++) {
         targets[i] = 1;
     }
@@ -183,9 +185,8 @@ void loop()
     for (size_t i = 0; i < 8; i++) {
         targets[i] = 0;
     }
+    solenoid.set_target(targets);
     HAL_Delay(1000);
-    update_heartbeat_led();
-    HAL_Delay(1);
 }
 extern "C" {
 // C言語側の関数のオーバーライド
