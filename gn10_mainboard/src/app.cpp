@@ -5,6 +5,7 @@
 #include "drivers/stm32_fdcan/driver_stm32_fdcan.hpp"
 #include "fdcan.h"
 #include "gn10_can/core/can_bus.hpp"
+#include "gn10_can/devices/esc_hub_client.hpp"
 #include "gn10_can/devices/motor_driver_client.hpp"
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
@@ -39,13 +40,13 @@ void update_heartbeat_led()
 
 gn10_can::drivers::DriverSTM32FDCAN can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
-// gn10_can::drivers::DriverSTM32FDCAN can3_driver(&hfdcan3);
+gn10_can::drivers::FDCANDriver fdcan3_driver(&hfdcan3);
 
 gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
-// gn10_can::CANBus can3_bus(can3_driver);
 
 robomas_can::C620CAN wheel_esc(can1_driver);
 gn10_can::CANBus can1_bus(can1_driver);
+gn10_can::FDCANBus can3_bus(fdcan3_driver);
 
 gn10_can::devices::MotorDriverClient motor(can1_bus, 0);
 
@@ -58,7 +59,8 @@ gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config;
 
 FourWheelOmni omni(0.3f, 0.065f);
-VescCAN vesc;
+
+gn10_can::devices::ESCHubClient esc_hub(can3_bus, 0);
 
 gn10_motor::PIDConfig<float> pid_config_wheel_f;
 gn10_motor::PIDConfig<float> pid_config_wheel_bl;
@@ -84,12 +86,11 @@ void setup()
 {
     can1_driver.init();
     fdcan2_driver.init();
-    vesc.init();
+    fdcan3_driver.init();
 
     motor_config.set_accel_ratio(1.0f);
     motor_config.set_max_duty_ratio(1.0f);
     motor.set_init(motor_config);
-    // can3_driver.init();
 
     pid_config_wheel_f.kp           = 0.5f;
     pid_config_wheel_f.ki           = 0.0f;
@@ -140,18 +141,10 @@ void loop()
     }*/
 
     if (operation.belt_throw) {
-        // servo_motor.set_angle_rad(M_PI * operation.belt_velocity);
-        vesc.comm_can_set_current(43, -1.2f);
-        vesc.comm_can_set_duty(43, -1.2f);
-
+        esc_hub.set_vesc_command(true);
     } else {
-        vesc.comm_can_set_current(43, 0.0f);
-        vesc.comm_can_set_duty(43, 0.0f);
-
-        //  servo_motor.set_angle_rad(0);
-    }
-
-    if (operation.arm_horizontal || operation.arm_vertical) {
+        // esc_hub.set_vesc_command(false);
+        esc_hub.set_vesc_command(true);
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
     }
 
@@ -189,7 +182,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     } else if (hfdcan->Instance == hfdcan2.Instance) {
         fdcan2_bus.update();
     } else if (hfdcan->Instance == hfdcan3.Instance) {
-        // can3_bus.update();
+        can3_bus.update();
     }
 }
 }
