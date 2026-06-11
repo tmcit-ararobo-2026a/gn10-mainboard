@@ -78,6 +78,7 @@ float wheel_angular_velocity_br = 0.0f;
 float wheel_angular_velocity_f_feedback  = 0.0f;
 float wheel_angular_velocity_bl_feedback = 0.0f;
 float wheel_angular_velocity_br_feedback = 0.0f;
+bool air_throw                           = false;
 std::array<bool, 8> targets{};
 
 /**
@@ -126,7 +127,7 @@ void loop()
     wheel_angular_velocity_f  = operation.wheel_front;
     wheel_angular_velocity_bl = operation.wheel_back_left;
     wheel_angular_velocity_br = operation.wheel_back_right;
-
+    air_throw                 = operation.air_throw;
     wheel_angular_velocity_f_feedback =
         2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(0) / 60.0f / 19.0f;
     wheel_angular_velocity_bl_feedback =
@@ -175,18 +176,12 @@ void loop()
     } else {
         motor.set_target(0.0f);
     }
+    for (size_t i = 0; i < 8; i++) {
+        targets[i] = operation.air_throw;
+    }
+    solenoid.set_target(targets);
     update_heartbeat_led();
     HAL_Delay(1);
-    for (size_t i = 0; i < 8; i++) {
-        targets[i] = 1;
-    }
-    solenoid.set_target(targets);
-    HAL_Delay(1000);
-    for (size_t i = 0; i < 8; i++) {
-        targets[i] = 0;
-    }
-    solenoid.set_target(targets);
-    HAL_Delay(1000);
 }
 extern "C" {
 // C言語側の関数のオーバーライド
