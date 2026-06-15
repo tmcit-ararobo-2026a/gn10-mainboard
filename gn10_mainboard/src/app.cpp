@@ -69,6 +69,7 @@ gn10_motor::PIDConfig<float> pid_config_wheel_br;
 gn10_motor::PID<float> pid_wheel_f(pid_config_wheel_f);
 gn10_motor::PID<float> pid_wheel_bl(pid_config_wheel_bl);
 gn10_motor::PID<float> pid_wheel_br(pid_config_wheel_br);
+int32_t enc_val;
 
 operation_data_t operation;
 float wheel_angular_velocity_f  = 0.0f;
@@ -145,7 +146,6 @@ void loop()
     } else {
         // esc_hub.set_vesc_command(false);
         esc_hub.set_vesc_command(true);
-        HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
     }
 
     wheel_currents[0] =
@@ -165,6 +165,11 @@ void loop()
         motor.set_target(0.0f);
     }
 
+    if (esc_hub.get_encoder_feedbacks(enc_val)) {
+        serial_printf("%d\n", enc_val);
+    } else {
+    }
+
     update_heartbeat_led();
     HAL_Delay(1);
 }
@@ -181,8 +186,15 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
         wheel_esc.receive_data(rx_frame.id, rx_frame.data.data());
     } else if (hfdcan->Instance == hfdcan2.Instance) {
         fdcan2_bus.update();
+
     } else if (hfdcan->Instance == hfdcan3.Instance) {
-        can3_bus.update();
+        gn10_can::FDCANFrame rx_frame;
+        fdcan3_driver.receive(rx_frame);
+        int32_t buf;
+        buf = (int32_t)rx_frame.data.data();
+        esc_hub.get_encoder_feedbacks(buf);
+        HAL_GPIO_TogglePin(LED_RAD_GPIO_Port, LED_RAD_Pin);
     }
+    HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
 }
 }
