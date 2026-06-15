@@ -188,11 +188,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
         fdcan2_bus.update();
 
     } else if (hfdcan->Instance == hfdcan3.Instance) {
-        gn10_can::FDCANFrame rx_frame;
-        fdcan3_driver.receive(rx_frame);
-        int32_t buf;
-        buf = (int32_t)rx_frame.data.data();
-        esc_hub.get_encoder_feedbacks(buf);
+        can3_bus.update();
         HAL_GPIO_TogglePin(LED_RAD_GPIO_Port, LED_RAD_Pin);
     }
     HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
