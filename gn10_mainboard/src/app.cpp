@@ -165,10 +165,9 @@ void loop()
         motor.set_target(0.0f);
     }
 
-    if (esc_hub.get_encoder_feedbacks(enc_val)) {
-        serial_printf("%d\n", enc_val);
-    } else {
-    }
+    esc_hub.get_encoder_feedbacks(enc_val);
+
+    serial_printf("%d\n", (int)enc_val);  // ← intにキャストして送信
 
     update_heartbeat_led();
     HAL_Delay(1);
@@ -191,6 +190,5 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
         can3_bus.update();
         HAL_GPIO_TogglePin(LED_RAD_GPIO_Port, LED_RAD_Pin);
     }
-    HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
 }
 }
