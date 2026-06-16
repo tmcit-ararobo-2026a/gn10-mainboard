@@ -16,6 +16,7 @@
 #include "gn10_mainboard/vesc_can.hpp"
 #include "robomas_can/c610_can.hpp"
 #include "robomas_can/c620_can.hpp"
+#include "tim.h"
 #include "wiznet_ether/robot_ethernet.hpp"
 #include "wiznet_ether/serial_printf.hpp"
 namespace {
@@ -112,8 +113,20 @@ void setup()
     // servo_motor.set_init(1000, 1200);
     power_manager.set_init(power_manager_config);
     heartbeat_last_toggle_time_ms = HAL_GetTick();
+    HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
+    TIM1->CNT = 0;
 }
 
+int16_t read_encoder_value(void)
+{
+    uint16_t enc_buff = TIM1->CNT;
+    TIM1->CNT         = 0;
+    if (enc_buff > 32767) {
+        return (int16_t)enc_buff * -1;
+    } else {
+        return (int16_t)enc_buff;
+    }
+}
 /**
  * @brief Run one control cycle and update status heartbeat LED.
  */
@@ -164,11 +177,15 @@ void loop()
     } else {
         motor.set_target(0.0f);
     }
+    /*
+        uint16_t enc_buff = TIM1->CNT;
+
+        serial_printf("enc:%d\n", (int16_t)enc_buff);
+    */
 
     esc_hub.get_encoder_feedbacks(enc_val);
 
-    serial_printf("%d\n", (int)enc_val);  // ← intにキャストして送信
-
+    serial_printf("%d\n", enc_val);
     update_heartbeat_led();
     HAL_Delay(1);
 }
