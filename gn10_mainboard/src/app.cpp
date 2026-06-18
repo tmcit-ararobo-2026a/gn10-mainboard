@@ -14,7 +14,6 @@
 // others
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
-#include "gn10_mainboard/four_wheel_omni.hpp"
 #include "gn10_mainboard/pid.hpp"
 #include "robomas_can/c610_can.hpp"
 #include "robomas_can/c620_can.hpp"
@@ -59,7 +58,6 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient esc_hub(fdcan3_bus, 0);
 
 robomas_can::C620CAN wheel_esc(can1_driver);
-FourWheelOmni omni(0.3f, 0.065f);
 
 // PID
 gn10_motor::PIDConfig<float> pid_config_wheel_f;
