@@ -161,7 +161,7 @@ void loop()
 
     float vesc_vel = 0.0f;
     if (operation.belt_throw) {
-        vesc_vel = (float)operation.belt_throw;
+        vesc_vel = (float)operation.belt_velocity;
     } else {
         vesc_vel = 0.0f;
     }
