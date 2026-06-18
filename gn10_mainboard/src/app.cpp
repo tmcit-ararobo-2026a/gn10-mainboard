@@ -161,12 +161,11 @@ void loop()
     if (operation.belt_throw) {
         vesc_vel = (float)operation.belt_throw;
     } else {
-        vesc_vel = 1.0f;
+        vesc_vel = 0.0f;
     }
 
-    float vesc_velocities[4] = {2.0f, 0.0f, 0.0f, 0.0f};
+    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
     esc_hub.set_angular_velocities(vesc_velocities);
-    esc_hub.set_gain_all(conf);
 
     wheel_currents[0] =
         pid_wheel_f.update(wheel_angular_velocity_f, wheel_angular_velocity_f_feedback, 0.001f);
@@ -187,7 +186,7 @@ void loop()
     float vesc_velocities_feedbacks[4];
 
     if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
-        serial_printf("%f\n", 2.2f);
+        serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
     serial_printf("%f\n", vesc_velocities_feedbacks);
     update_heartbeat_led();
