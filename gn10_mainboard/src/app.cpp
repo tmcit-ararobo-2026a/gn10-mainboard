@@ -167,8 +167,6 @@ void loop()
         serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
     // Control the air-type injection
-    bool air_throw = false;
-    air_throw      = operation.air_throw;
     std::array<bool, 8> targets{};
     for (size_t i = 0; i < 8; i++) {
         targets[i] = operation.air_throw;
