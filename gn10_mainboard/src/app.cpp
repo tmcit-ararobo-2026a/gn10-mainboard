@@ -158,7 +158,7 @@ void loop()
         esc_hub.set_vesc_command(true);
     } else {
         // esc_hub.set_vesc_command(false);
-        esc_hub.set_vesc_command(true);
+        esc_hub.set_vesc_command(false);
     }
 
     wheel_currents[0] =
@@ -183,9 +183,9 @@ void loop()
         serial_printf("enc:%d\n", (int16_t)enc_buff);
     */
 
-    esc_hub.get_encoder_feedbacks(enc_val);
-
-    serial_printf("%d\n", enc_val);
+    if (esc_hub.get_encoder_feedbacks(enc_val)) {
+        serial_printf("%d\n", enc_val);  // 新しい値が来たときだけ表示
+    }
     update_heartbeat_led();
     HAL_Delay(1);
 }
