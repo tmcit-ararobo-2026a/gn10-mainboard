@@ -113,5 +113,43 @@ uint32_t FDCANDriver::convert_dlc_to_bytes(uint32_t dlc)
     }
 }
 
+uint32_t FDCANDriver::convert_bytes_to_dlc(uint32_t bytes)
+{
+    switch (bytes) {
+        case 1:
+            return FDCAN_DLC_BYTES_1;
+        case 2:
+            return FDCAN_DLC_BYTES_2;
+        case 3:
+            return FDCAN_DLC_BYTES_3;
+        case 4:
+            return FDCAN_DLC_BYTES_4;
+        case 5:
+            return FDCAN_DLC_BYTES_5;
+        case 6:
+            return FDCAN_DLC_BYTES_6;
+        case 7:
+            return FDCAN_DLC_BYTES_7;
+        case 8:
+            return FDCAN_DLC_BYTES_8;
+        case 12:
+            return FDCAN_DLC_BYTES_12;
+        case 16:
+            return FDCAN_DLC_BYTES_16;
+        case 20:
+            return FDCAN_DLC_BYTES_20;
+        case 24:
+            return FDCAN_DLC_BYTES_24;
+        case 32:
+            return FDCAN_DLC_BYTES_32;
+        case 48:
+            return FDCAN_DLC_BYTES_48;
+        case 64:
+            return FDCAN_DLC_BYTES_64;
+        default:
+            break;
+    }
+}
+
 }  // namespace drivers
 }  // namespace gn10_can

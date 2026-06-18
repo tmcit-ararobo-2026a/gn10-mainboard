@@ -6,6 +6,7 @@
 #include "fdcan.h"
 #include "gn10_can/core/can_bus.hpp"
 #include "gn10_can/devices/esc_hub_client.hpp"
+#include "gn10_can/devices/esc_hub_config.hpp"
 #include "gn10_can/devices/motor_driver_client.hpp"
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
@@ -63,6 +64,8 @@ FourWheelOmni omni(0.3f, 0.065f);
 
 gn10_can::devices::ESCHubClient esc_hub(can3_bus, 0);
 
+gn10_can::devices::ESCHubConfig conf;
+
 gn10_motor::PIDConfig<float> pid_config_wheel_f;
 gn10_motor::PIDConfig<float> pid_config_wheel_bl;
 gn10_motor::PIDConfig<float> pid_config_wheel_br;
@@ -109,6 +112,7 @@ void setup()
     pid_config_wheel_br.output_limit = 20.0f;
     pid_wheel_br.update_config(pid_config_wheel_br);
 
+    conf.ki = 1.0f;
     // servo_motor.set_init(1000, 1200);
     power_manager.set_init(power_manager_config);
     heartbeat_last_toggle_time_ms = HAL_GetTick();
@@ -154,14 +158,15 @@ void loop()
     }*/
 
     float vesc_vel = 0.0f;
-
     if (operation.belt_throw) {
         vesc_vel = (float)operation.belt_throw;
     } else {
-        vesc_vel = 0.0f;
+        vesc_vel = 1.0f;
     }
-    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
+
+    float vesc_velocities[4] = {2.0f, 0.0f, 0.0f, 0.0f};
     esc_hub.set_angular_velocities(vesc_velocities);
+    esc_hub.set_gain_all(conf);
 
     wheel_currents[0] =
         pid_wheel_f.update(wheel_angular_velocity_f, wheel_angular_velocity_f_feedback, 0.001f);
@@ -182,8 +187,9 @@ void loop()
     float vesc_velocities_feedbacks[4];
 
     if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
-        serial_printf("%d\n", vesc_velocities_feedbacks);
+        serial_printf("%f\n", 2.2f);
     }
+    serial_printf("%f\n", vesc_velocities_feedbacks);
     update_heartbeat_led();
     HAL_Delay(1);
 }
