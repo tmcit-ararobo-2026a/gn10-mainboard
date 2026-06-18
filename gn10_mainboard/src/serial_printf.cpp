@@ -1,4 +1,4 @@
-#include "wiznet_ether/serial_printf.hpp"
+#include "gn10_mainboard/serial_printf.hpp"
 
 template void serial_printf<>(const std::string& fmt);
 template void serial_printf<

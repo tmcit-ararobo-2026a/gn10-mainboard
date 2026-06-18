@@ -1,8 +1,8 @@
-#include "wiznet_ether/robot_ethernet.hpp"
+#include "gn10_mainboard/robot_ethernet.hpp"
 
+#include "gn10_mainboard/serial_printf.hpp"
 #include "gpio.h"
 #include "wiznet_ether/ethernet_config.hpp"
-#include "wiznet_ether/serial_printf.hpp"
 #include "wiznet_ether/socket.hpp"
 #include "wiznet_ether/w5500_spi.hpp"
 
