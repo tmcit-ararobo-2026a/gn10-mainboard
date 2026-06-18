@@ -3,7 +3,6 @@
 #include <cmath>
 // STM32 HAL
 #include "fdcan.h"
-#include "tim.h"
 // gn10-can
 #include "gn10_can/core/can_bus.hpp"
 #include "gn10_can/devices/esc_hub_client.hpp"
@@ -38,8 +37,6 @@ void update_heartbeat_led()
         HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
     }
 }
-
-}  // namespace
 
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
@@ -80,8 +77,8 @@ float wheel_angular_velocity_br = 0.0f;
 float wheel_angular_velocity_f_feedback  = 0.0f;
 float wheel_angular_velocity_bl_feedback = 0.0f;
 float wheel_angular_velocity_br_feedback = 0.0f;
-bool air_throw                           = false;
-std::array<bool, 8> targets{};
+
+}  // namespace
 
 /**
  * @brief Initialize CAN and mainboard application state.
@@ -117,20 +114,8 @@ void setup()
     pid_wheel_br.update_config(pid_config_wheel_br);
 
     heartbeat_last_toggle_time_ms = HAL_GetTick();
-    HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
-    TIM1->CNT = 0;
 }
 
-int16_t read_encoder_value(void)
-{
-    uint16_t enc_buff = TIM1->CNT;
-    TIM1->CNT         = 0;
-    if (enc_buff > 32767) {
-        return (int16_t)enc_buff * -1;
-    } else {
-        return (int16_t)enc_buff;
-    }
-}
 /**
  * @brief Run one control cycle and update status heartbeat LED.
  */
@@ -182,7 +167,9 @@ void loop()
         serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
     // Control the air-type injection
-    air_throw = operation.air_throw;
+    bool air_throw = false;
+    air_throw      = operation.air_throw;
+    std::array<bool, 8> targets{};
     for (size_t i = 0; i < 8; i++) {
         targets[i] = operation.air_throw;
     }
