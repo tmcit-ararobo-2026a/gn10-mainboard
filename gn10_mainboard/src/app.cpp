@@ -188,7 +188,6 @@ void loop()
     if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
         serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
-    serial_printf("%f\n", vesc_velocities_feedbacks);
     update_heartbeat_led();
     HAL_Delay(1);
 }
