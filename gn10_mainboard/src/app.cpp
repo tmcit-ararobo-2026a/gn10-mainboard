@@ -73,7 +73,7 @@ void setup()
     fdcan2_driver.init();
     fdcan3_driver.init();
 
-    // Motor configuration settings
+    // Motor configuration
     motor_config.set_accel_ratio(1.0f);
     motor_config.set_max_duty_ratio(1.0f);
 
