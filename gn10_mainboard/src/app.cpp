@@ -170,7 +170,7 @@ void loop()
         targets[i] = operation.air_throw;
     }
     solenoid.set_target(targets);
-    // Basic System Proccess
+    // Basic System Process
     update_heartbeat_led();
     HAL_Delay(1);
 }
