@@ -70,7 +70,6 @@ gn10_motor::PIDConfig<float> pid_config_wheel_br;
 gn10_motor::PID<float> pid_wheel_f(pid_config_wheel_f);
 gn10_motor::PID<float> pid_wheel_bl(pid_config_wheel_bl);
 gn10_motor::PID<float> pid_wheel_br(pid_config_wheel_br);
-int32_t enc_val;
 
 operation_data_t operation;
 float wheel_angular_velocity_f  = 0.0f;
@@ -154,12 +153,15 @@ void loop()
         c610_current = 0.0f;
     }*/
 
+    float vesc_vel = 0.0f;
+
     if (operation.belt_throw) {
-        esc_hub.set_vesc_command(true);
+        vesc_vel = (float)operation.belt_throw;
     } else {
-        // esc_hub.set_vesc_command(false);
-        esc_hub.set_vesc_command(false);
+        vesc_vel = 0.0f;
     }
+    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
+    esc_hub.set_angular_velocities(vesc_velocities);
 
     wheel_currents[0] =
         pid_wheel_f.update(wheel_angular_velocity_f, wheel_angular_velocity_f_feedback, 0.001f);
@@ -177,14 +179,10 @@ void loop()
     } else {
         motor.set_target(0.0f);
     }
-    /*
-        uint16_t enc_buff = TIM1->CNT;
+    float vesc_velocities_feedbacks[4];
 
-        serial_printf("enc:%d\n", (int16_t)enc_buff);
-    */
-
-    if (esc_hub.get_encoder_feedbacks(enc_val)) {
-        serial_printf("%d\n", enc_val);  // 新しい値が来たときだけ表示
+    if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+        serial_printf("%d\n", vesc_velocities_feedbacks);
     }
     update_heartbeat_led();
     HAL_Delay(1);
