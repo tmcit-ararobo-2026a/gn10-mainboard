@@ -15,10 +15,9 @@
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/pid.hpp"
+#include "gn10_mainboard/serial_printf.hpp"
 #include "robomas_can/c610_can.hpp"
 #include "robomas_can/c620_can.hpp"
-#include "wiznet_ether/robot_ethernet.hpp"
-#include "wiznet_ether/serial_printf.hpp"
 namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
