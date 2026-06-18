@@ -6,7 +6,6 @@
 #include "fdcan.h"
 #include "gn10_can/core/can_bus.hpp"
 #include "gn10_can/devices/esc_hub_client.hpp"
-#include "gn10_can/devices/esc_hub_config.hpp"
 #include "gn10_can/devices/motor_driver_client.hpp"
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
@@ -64,8 +63,6 @@ FourWheelOmni omni(0.3f, 0.065f);
 
 gn10_can::devices::ESCHubClient esc_hub(can3_bus, 0);
 
-gn10_can::devices::ESCHubConfig conf;
-
 gn10_motor::PIDConfig<float> pid_config_wheel_f;
 gn10_motor::PIDConfig<float> pid_config_wheel_bl;
 gn10_motor::PIDConfig<float> pid_config_wheel_br;
@@ -112,7 +109,6 @@ void setup()
     pid_config_wheel_br.output_limit = 20.0f;
     pid_wheel_br.update_config(pid_config_wheel_br);
 
-    conf.ki = 1.0f;
     // servo_motor.set_init(1000, 1200);
     power_manager.set_init(power_manager_config);
     heartbeat_last_toggle_time_ms = HAL_GetTick();
