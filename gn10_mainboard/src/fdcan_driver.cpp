@@ -33,9 +33,10 @@ bool FDCANDriver::send(const FDCANFrame& frame)
     } else {
         tx_header.IdType = FDCAN_STANDARD_ID;
     }
+
     tx_header.Identifier          = frame.id;
     tx_header.TxFrameType         = FDCAN_DATA_FRAME;
-    tx_header.DataLength          = frame.dlc;
+    tx_header.DataLength          = convert_bytes_to_dlc(frame.dlc);
     tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     tx_header.BitRateSwitch       = FDCAN_BRS_OFF;
     tx_header.FDFormat            = FDCAN_FD_CAN;
@@ -110,6 +111,44 @@ uint32_t FDCANDriver::convert_dlc_to_bytes(uint32_t dlc)
             return 64;
         default:
             return dlc;  // 8以下はそのまま
+    }
+}
+
+uint32_t FDCANDriver::convert_bytes_to_dlc(uint32_t bytes)
+{
+    switch (bytes) {
+        case 1:
+            return FDCAN_DLC_BYTES_1;
+        case 2:
+            return FDCAN_DLC_BYTES_2;
+        case 3:
+            return FDCAN_DLC_BYTES_3;
+        case 4:
+            return FDCAN_DLC_BYTES_4;
+        case 5:
+            return FDCAN_DLC_BYTES_5;
+        case 6:
+            return FDCAN_DLC_BYTES_6;
+        case 7:
+            return FDCAN_DLC_BYTES_7;
+        case 8:
+            return FDCAN_DLC_BYTES_8;
+        case 12:
+            return FDCAN_DLC_BYTES_12;
+        case 16:
+            return FDCAN_DLC_BYTES_16;
+        case 20:
+            return FDCAN_DLC_BYTES_20;
+        case 24:
+            return FDCAN_DLC_BYTES_24;
+        case 32:
+            return FDCAN_DLC_BYTES_32;
+        case 48:
+            return FDCAN_DLC_BYTES_48;
+        case 64:
+            return FDCAN_DLC_BYTES_64;
+        default:
+            return bytes;  // どれにも当てはまらない場合はそのまま送信
     }
 }
 

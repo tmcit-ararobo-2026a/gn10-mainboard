@@ -27,6 +27,7 @@ public:
 
 private:
     uint32_t convert_dlc_to_bytes(uint32_t dlc);
+    uint32_t convert_bytes_to_dlc(uint32_t bytes);
     FDCAN_HandleTypeDef* hfdcan_;
 };
 }  // namespace drivers
