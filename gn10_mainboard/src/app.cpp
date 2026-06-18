@@ -10,6 +10,7 @@
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/servo_motor_client.hpp"
+#include "gn10_can/devices/solenoid_driver_client.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/four_wheel_omni.hpp"
 #include "gn10_mainboard/pid.hpp"
@@ -50,6 +51,7 @@ gn10_can::CANBus can1_bus(can1_driver);
 gn10_can::FDCANBus can3_bus(fdcan3_driver);
 
 gn10_can::devices::MotorDriverClient motor(can1_bus, 0);
+gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
 
 // gn10_can::devices::ServoMotorClient servo_motor(can3_bus, 0);
 gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
@@ -79,6 +81,8 @@ float wheel_angular_velocity_br = 0.0f;
 float wheel_angular_velocity_f_feedback  = 0.0f;
 float wheel_angular_velocity_bl_feedback = 0.0f;
 float wheel_angular_velocity_br_feedback = 0.0f;
+bool air_throw                           = false;
+std::array<bool, 8> targets{};
 
 /**
  * @brief Initialize CAN and mainboard application state.
@@ -92,6 +96,8 @@ void setup()
     motor_config.set_accel_ratio(1.0f);
     motor_config.set_max_duty_ratio(1.0f);
     motor.set_init(motor_config);
+    solenoid.set_init();
+    // can3_driver.init();
 
     pid_config_wheel_f.kp           = 0.5f;
     pid_config_wheel_f.ki           = 0.0f;
@@ -136,7 +142,7 @@ void loop()
     wheel_angular_velocity_f  = operation.wheel_front;
     wheel_angular_velocity_bl = operation.wheel_back_left;
     wheel_angular_velocity_br = operation.wheel_back_right;
-
+    air_throw                 = operation.air_throw;
     wheel_angular_velocity_f_feedback =
         2.0f * 3.1415f * (float)wheel_esc.get_feedback_speed(0) / 60.0f / 19.0f;
     wheel_angular_velocity_bl_feedback =
@@ -184,6 +190,10 @@ void loop()
     if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
         serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
+    for (size_t i = 0; i < 8; i++) {
+        targets[i] = operation.air_throw;
+    }
+    solenoid.set_target(targets);
     update_heartbeat_led();
     HAL_Delay(1);
 }
