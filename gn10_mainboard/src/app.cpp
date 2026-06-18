@@ -12,7 +12,7 @@
 #include "gn10_can/devices/servo_motor_client.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // others
-#include "drivers/stm32_fdcan/driver_stm32_fdcan.hpp"
+#include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/four_wheel_omni.hpp"
 #include "gn10_mainboard/pid.hpp"
@@ -42,7 +42,7 @@ void update_heartbeat_led()
 gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config;
 // CAN Drivers
-gn10_can::drivers::DriverSTM32FDCAN can1_driver(&hfdcan1);
+gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
 gn10_can::drivers::FDCANDriver fdcan3_driver(&hfdcan3);
 // CAN Bus
