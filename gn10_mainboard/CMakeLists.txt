@@ -5,6 +5,8 @@ add_library(gn10_mainboard STATIC
     src/fdcan_driver.cpp
     src/vesc_can.cpp
     src/can_driver.cpp
+    src/serial_printf.cpp
+    src/robot_ethernet.cpp
 )
 
 target_include_directories(gn10_mainboard PUBLIC

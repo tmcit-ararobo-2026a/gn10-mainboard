@@ -1,7 +1,5 @@
 #pragma once
-// #define ENABLE_PID_GAIN_UDP
-// #define ENABLE_CONTROLLER_BYPASS_UDP
-#include "wiznet_ether/robot_data_config.hpp"
+#include "gn10_mainboard/robot_data_config.hpp"
 
 class RobotEthernet
 {
