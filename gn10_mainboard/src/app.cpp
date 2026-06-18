@@ -11,11 +11,13 @@
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/servo_motor_client.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
-// others
+// gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/pid.hpp"
+#include "gn10_mainboard/robot_data_config.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
+// others
 #include "robomas_can/c610_can.hpp"
 #include "robomas_can/c620_can.hpp"
 namespace {
