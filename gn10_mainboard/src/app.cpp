@@ -24,6 +24,9 @@ namespace {
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
+// Retained Data
+operation_data_t operation;
+float vesc_velocities_feedbacks[4];
 
 /**
  * @brief Toggle heartbeat LED at a fixed interval.
@@ -34,6 +37,13 @@ void update_heartbeat_led()
     if ((now_ms - heartbeat_last_toggle_time_ms) >= k_heartbeat_toggle_interval_ms) {
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
+        /* serial_printf(
+            "f:%f,bl:%f,br:%f\n",
+            operation.wheel_front,
+            operation.wheel_back_left,
+            operation.wheel_back_right
+        ); */
+        // serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
 }
 
@@ -58,9 +68,6 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient esc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient wheel_esc(fdcan3_bus, 1);
 
-// Retained Data
-operation_data_t operation;
-
 }  // namespace
 
 /**
@@ -81,6 +88,10 @@ void setup()
     motor.set_init(motor_config);
     solenoid.set_init();
     power_manager.set_init(power_manager_config);
+    HAL_Delay(1000);
+    for (uint8_t i = 0; i < 4; i++) {
+        wheel_esc.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
+    }
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
@@ -121,9 +132,7 @@ void loop()
     esc_hub.set_angular_velocities(vesc_velocities);
 
     // Get latest belt angular velocity
-    float vesc_velocities_feedbacks[4];
-    if (esc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
-        serial_printf("%f\n", vesc_velocities_feedbacks[0]);
+    if (wheel_esc.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
     }
 
     // Control the air-type injection
