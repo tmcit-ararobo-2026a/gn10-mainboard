@@ -49,7 +49,7 @@ void update_heartbeat_led()
 
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
-gn10_can::devices::MotorConfig motor_config;
+gn10_can::devices::MotorConfig motor_config_collect;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -59,14 +59,14 @@ gn10_can::CANBus can1_bus(can1_driver);
 gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
 gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
-gn10_can::devices::MotorDriverClient motor(can1_bus, 0);
+gn10_can::devices::MotorDriverClient motor_collect(can1_bus, 0);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
 gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
     fdcan2_bus, 0
 );
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
-gn10_can::devices::ESCHubClient esc_hub(fdcan3_bus, 0);
-gn10_can::devices::ESCHubClient wheel_esc(fdcan3_bus, 1);
+gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
+gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 
 }  // namespace
 
@@ -81,16 +81,16 @@ void setup()
     fdcan3_driver.init();
 
     // Motor configuration
-    motor_config.set_accel_ratio(1.0f);
-    motor_config.set_max_duty_ratio(1.0f);
+    motor_config_collect.set_accel_ratio(1.0f);
+    motor_config_collect.set_max_duty_ratio(1.0f);
 
     // Initialize devices on the network
-    motor.set_init(motor_config);
+    motor_collect.set_init(motor_config_collect);
     solenoid.set_init();
     power_manager.set_init(power_manager_config);
     HAL_Delay(1000);
     for (uint8_t i = 0; i < 4; i++) {
-        wheel_esc.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
+        esc_wheel.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
     }
 
     // System setup
@@ -112,13 +112,13 @@ void loop()
     wheel_angular_velocites[1] = operation.wheel_back_left;
     wheel_angular_velocites[2] = operation.wheel_back_right;
     wheel_angular_velocites[3] = 0.0f;
-    wheel_esc.set_angular_velocities(wheel_angular_velocites);
+    esc_wheel.set_angular_velocities(wheel_angular_velocites);
 
     // Control the dust cloths collector
     if (operation.collect) {
-        motor.set_target(1.0f);
+        motor_collect.set_target(1.0f);
     } else {
-        motor.set_target(0.0f);
+        motor_collect.set_target(0.0f);
     }
 
     // Control the belt-type injection
@@ -129,10 +129,10 @@ void loop()
         vesc_vel = 0.0f;
     }
     float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
-    esc_hub.set_angular_velocities(vesc_velocities);
+    vesc_hub.set_angular_velocities(vesc_velocities);
 
     // Get latest belt angular velocity
-    if (wheel_esc.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+    if (esc_wheel.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
     }
 
     // Control the air-type injection
