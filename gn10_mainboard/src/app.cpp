@@ -50,6 +50,7 @@ void update_heartbeat_led()
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config_collect;
+gn10_can::devices::MotorConfig motor_config_wheel;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -84,12 +85,16 @@ void setup()
     motor_config_collect.set_accel_ratio(1.0f);
     motor_config_collect.set_max_duty_ratio(1.0f);
 
+    motor_config_wheel.set_max_duty_ratio(0.5f);
+    motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
+
     // Initialize devices on the network
     motor_collect.set_init(motor_config_collect);
     solenoid.set_init();
     power_manager.set_init(power_manager_config);
     HAL_Delay(1000);
     for (uint8_t i = 0; i < 4; i++) {
+        esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
     }
 
