@@ -90,7 +90,7 @@ void setup()
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_arm.set_max_duty_ratio(0.5f);
-    motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C620);
+    motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
 
     // Initialize devices on the network
     motor_collect.set_init(motor_config_collect);
@@ -99,9 +99,11 @@ void setup()
     HAL_Delay(1000);
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
-        esc_wheel.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
+        esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+        HAL_Delay(10);
         esc_arm.set_init(i, motor_config_arm);
-        esc_arm.set_gains(i, 0.5f, 0.0f, 0.0f, 0.0f);
+        esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+        HAL_Delay(10);
     }
 
     // System setup
@@ -119,9 +121,9 @@ void loop()
 
     // Set speed to ESC Hub for wheels
     float wheel_angular_velocites[4];
-    wheel_angular_velocites[0] = operation.wheel_front;
-    wheel_angular_velocites[1] = operation.wheel_back_left;
-    wheel_angular_velocites[2] = operation.wheel_back_right;
+    wheel_angular_velocites[0] = operation.wheel_front * 19.0f;
+    wheel_angular_velocites[1] = operation.wheel_back_left * 19.0f;
+    wheel_angular_velocites[2] = operation.wheel_back_right * 19.0f;
     wheel_angular_velocites[3] = 0.0f;
     esc_wheel.set_angular_velocities(wheel_angular_velocites);
 
@@ -155,9 +157,13 @@ void loop()
 
     // Control the arm with C610
     float arm_velocities[4];
-    arm_velocities[0] = operation.arm_horizontal;
-    arm_velocities[1] = operation.arm_vertical;
-    arm_velocities[2] = operation.arm_hold;
+    arm_velocities[0] = operation.arm_horizontal * 200.0f;
+    arm_velocities[1] = operation.arm_vertical * 200.0f;
+    if (operation.arm_hold) {
+        arm_velocities[2] = 200.0f;
+    } else {
+        arm_velocities[2] = 0.0f;
+    }
     arm_velocities[3] = 0.0f;
     esc_arm.set_angular_velocities(arm_velocities);
 
