@@ -27,9 +27,12 @@ struct operation_data_t {
     float belt_velocity;
     float arm_horizontal;
     float arm_vertical;
+    float desk_lift;
+    float desk_depth;
+    float desk_finger;
     bool arm_hold;
     bool belt_throw;
     bool collect;
     bool air_throw;
-    uint8_t reserved[2];
+    uint8_t reserved[24];
 } __attribute__((__packed__));
