@@ -169,10 +169,10 @@ void loop()
     esc_arm.set_angular_velocities(arm_velocities);
 
     float desk_arm_velocities[4];
-    arm_velocities[0] = operation.desk_depth * 200.0f;
-    arm_velocities[1] = operation.desk_lift * 200.0f;
-    arm_velocities[2] = operation.desk_finger * 200.0f;
-    arm_velocities[3] = 0.0f;
+    desk_arm_velocities[0] = operation.desk_depth * 200.0f;
+    desk_arm_velocities[1] = operation.desk_lift * 200.0f;
+    desk_arm_velocities[2] = operation.desk_finger * 200.0f;
+    desk_arm_velocities[3] = 0.0f;
     desk_arm.set_angular_velocities(desk_arm_velocities);
     // Basic System Process
     update_heartbeat_led();
