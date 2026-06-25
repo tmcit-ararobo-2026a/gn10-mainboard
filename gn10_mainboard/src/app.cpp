@@ -100,10 +100,8 @@ void setup()
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
-        HAL_Delay(10);
         esc_arm.set_init(i, motor_config_arm);
         esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
-        HAL_Delay(10);
     }
 
     // System setup
