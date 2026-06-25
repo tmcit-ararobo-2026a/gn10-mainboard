@@ -103,6 +103,8 @@ void setup()
         esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
         esc_arm.set_init(i, motor_config_arm);
         esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+        desk_arm.set_init(i, motor_config_arm);
+        desk_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
     }
 
     // System setup
