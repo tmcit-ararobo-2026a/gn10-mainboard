@@ -142,7 +142,16 @@ void loop()
     } else {
         vesc_vel = 0.0f;
     }
-    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
+
+    float vesc_init = 0.0f;
+
+    if (operation.belt_init) {
+        vesc_init = 1.0f;
+    } else {
+        vesc_init = 0.0f;
+    }
+
+    float vesc_velocities[4] = {vesc_vel, vesc_init, 0.0f, 0.0f};
     vesc_hub.set_angular_velocities(vesc_velocities);
 
     // Get latest belt angular velocity

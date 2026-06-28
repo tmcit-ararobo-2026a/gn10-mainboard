@@ -34,5 +34,6 @@ struct operation_data_t {
     bool belt_throw;
     bool collect;
     bool air_throw;
-    uint8_t reserved[22];
+    bool belt_init;
+    uint8_t reserved[21];
 } __attribute__((__packed__));
