@@ -111,6 +111,8 @@ void setup()
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
 
+bool first_belt_command = false;
+
 /**
  * @brief Run one control cycle and update status heartbeat LED.
  */
@@ -136,20 +138,27 @@ void loop()
     }
 
     // Control the belt-type injection
-    float vesc_vel = 0.0f;
+    float vesc_vel  = 0.0f;
+    float vesc_init = 0.0f;
     if (operation.belt_throw) {
+        if (!first_belt_command) {
+            first_belt_command = true;
+            vesc_init          = 2.0f;
+        }
+
         vesc_vel = (float)operation.belt_velocity;
+
     } else {
         vesc_vel = 0.0f;
     }
 
-    float vesc_init = 0.0f;
-
-    if (operation.belt_init) {
-        vesc_init = 1.0f;
-    } else {
-        vesc_init = 0.0f;
-    }
+    // topic受信できていないためコメントアウト
+    /*
+        if (operation.belt_init) {
+            vesc_init = 1.0f;
+        } else {
+            vesc_init = 0.0f;
+        }*/
 
     float vesc_velocities[4] = {vesc_vel, vesc_init, 0.0f, 0.0f};
     vesc_hub.set_angular_velocities(vesc_velocities);
