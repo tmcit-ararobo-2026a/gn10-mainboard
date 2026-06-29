@@ -75,6 +75,8 @@ gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
 
 // belt
 bool initilized_belt = false;
+float vesc_vel       = 0.0f;
+
 }  // namespace
 
 /**
@@ -141,14 +143,13 @@ void loop()
     }
 
     // Control the belt-type injection
-    float vesc_vel = 0.0f;
-    if (operation.belt_throw) {
-        if (!initilized_belt) {
-            initilized_belt = true;
-            vesc_hub.set_init(0, motor_config_belt);
-        }
-        vesc_vel = (float)operation.belt_velocity;
+    if (operation.belt_init && !initilized_belt) {
+        initilized_belt = true;
+        vesc_hub.set_init(0, motor_config_belt);
+    }
 
+    if (operation.belt_throw && initilized_belt) {
+        vesc_vel = (float)operation.belt_velocity;
     } else {
         vesc_vel = 0.0f;
     }
