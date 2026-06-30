@@ -52,6 +52,7 @@ gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config_collect;
 gn10_can::devices::MotorConfig motor_config_wheel;
 gn10_can::devices::MotorConfig motor_config_arm;
+gn10_can::devices::MotorConfig motor_config_belt;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -71,6 +72,10 @@ gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
 gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
+
+// belt
+bool initilized_belt = false;
+float vesc_vel       = 0.0f;
 
 }  // namespace
 
@@ -92,6 +97,8 @@ void setup()
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_arm.set_max_duty_ratio(0.5f);
     motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
+
+    motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
     // Initialize devices on the network
     motor_collect.set_init(motor_config_collect);
@@ -136,12 +143,17 @@ void loop()
     }
 
     // Control the belt-type injection
-    float vesc_vel = 0.0f;
-    if (operation.belt_throw) {
+    if (operation.belt_init && !initilized_belt) {
+        initilized_belt = true;
+        vesc_hub.set_init(0, motor_config_belt);
+    }
+
+    if (operation.belt_throw && initilized_belt) {
         vesc_vel = (float)operation.belt_velocity;
     } else {
         vesc_vel = 0.0f;
     }
+
     float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
     vesc_hub.set_angular_velocities(vesc_velocities);
 

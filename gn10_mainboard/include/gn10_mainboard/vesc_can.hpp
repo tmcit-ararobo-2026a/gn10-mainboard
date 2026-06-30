@@ -22,8 +22,10 @@ private:
     FDCAN_FilterTypeDef rxfilter;
     FDCAN_TxHeaderTypeDef txheader;
     uint8_t rxdata[8];
+    FDCAN_HandleTypeDef* hfdcan_;
 
 public:
+    VescCAN(FDCAN_HandleTypeDef* hfdcan);
     void init();
     void send_data(uint32_t can_id, uint8_t* data, uint8_t len);
     void can_callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs);
