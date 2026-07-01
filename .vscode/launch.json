@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (ST-Link Official)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "stlink",
+            "device": "STM32G474RC",
+            "interface": "swd",
+            "runToEntryPoint": "main",
+            // --- 共通設定はここまで ---
+            // Windows用の設定 (STM32CubeCLTのパス)
+            "windows": {
+                "serverpath": "C:/ST/STM32CubeCLT_1.21.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+                "stm32cubeprogrammer": "C:/ST/STM32CubeCLT_1.21.0/STM32CubeProgrammer/bin"
+            }
+        }
+    ]
+}

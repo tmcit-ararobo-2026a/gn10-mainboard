@@ -179,7 +179,11 @@ void loop()
     }
     arm_velocities[3] = 0.0f;
     esc_arm.set_angular_velocities(arm_velocities);
-
+    if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+    }
     float desk_arm_velocities[4];
     desk_arm_velocities[0] = operation.desk_depth * 200.0f;
     desk_arm_velocities[1] = operation.desk_lift * 200.0f;
