@@ -158,7 +158,8 @@ void loop()
     vesc_hub.set_angular_velocities(vesc_velocities);
 
     // Get latest belt angular velocity
-    if (esc_wheel.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+    if (vesc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+        serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
 
     // Control the air-type injection
