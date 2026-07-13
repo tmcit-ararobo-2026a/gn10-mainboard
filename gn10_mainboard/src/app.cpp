@@ -118,7 +118,7 @@ void setup()
     }
 
     // Initialize Ethernet
-    ether.init();
+    // ether.init();
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
@@ -131,7 +131,7 @@ void loop()
 {
     // Get latest command from the Jetson
     if (robot_control_hub.get_command(operation)) {
-        ether.receive_operation_data(operation);
+        // ether.receive_operation_data(operation);
     }
 
     // Set speed to ESC Hub for wheels
