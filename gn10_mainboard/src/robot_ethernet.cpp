@@ -82,7 +82,7 @@ bool RobotEthernet::receive_operation_data(operation_data_t& data)
     );
     if (ret == sizeof(operation_data_union_t) &&
         operation_union_.data.header == operation_data_header) {
-        *data = operation_union_.data;
+        data = operation_union_.data;
         return true;
     }
     return false;
