@@ -17,6 +17,7 @@
 #include "gn10_mainboard/pid.hpp"
 #include "gn10_mainboard/robot_data_config.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
+#include "gn10_mainboard/robot_ethernet.hpp"
 // others
 
 namespace {
@@ -72,6 +73,8 @@ gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
 gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
+//Ethernet
+RobotEthernet robotethernet
 
 // belt
 bool initilized_belt = false;
@@ -112,6 +115,9 @@ void setup()
         esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
         desk_arm.set_init(i, motor_config_arm);
         desk_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+    }
+    //Ethernet
+    if (!robot_ethernet.init()) {
     }
 
     // System setup
@@ -179,9 +185,15 @@ void loop()
     }
     arm_velocities[3] = 0.0f;
     esc_arm.set_angular_velocities(arm_velocities);
-    if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
+   
+    //ボタンが押されたら送る処理
+
+    if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) 
+    {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-    } else {
+    } 
+    else 
+    {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
     }
     float desk_arm_velocities[4];
