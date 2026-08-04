@@ -17,6 +17,7 @@ constexpr uint16_t controller_data_header = 0x15A5;
 constexpr uint16_t pid_gain_data_header   = 0x5A5C;
 
 struct feedback_data_t {
+    uint16_t header;  // ヘッダー
 } __attribute__((__packed__));
 
 struct operation_data_t {

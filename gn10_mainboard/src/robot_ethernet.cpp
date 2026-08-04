@@ -39,43 +39,50 @@ bool RobotEthernet::init()
 
     setRCR(1);
     setRTR(100);
-    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
     socket(
-        socket_operation, Sn_MR_UDP, ethernet_config::main_board::port_operation, SF_IO_NONBLOCK
+        socket_operation_, Sn_MR_UDP, ethernet_config::main_board::port_operation, SF_IO_NONBLOCK
     );
-    setSn_CR(socket_operation, Sn_CR_RECV);
-    if (getSn_SR(socket_operation) == SOCK_UDP) {
+    setSn_CR(socket_operation_, Sn_CR_RECV);
+    if (getSn_SR(socket_operation_) == SOCK_UDP) {
     } else {
         return false;
     }
+
+    socket(socket_feedback_, Sn_MR_UDP, ethernet_config::main_board::port_feedback, SF_IO_NONBLOCK);
+    setSn_CR(socket_feedback_, Sn_CR_RECV);
+    if (getSn_SR(socket_feedback_) == SOCK_UDP) {
+    } else {
+        return false;
+    }
+
     return true;
 }
 
-void RobotEthernet::send_operation_data(operation_data_t data)
+void RobotEthernet::send_feedback_data(feedback_data_t data)
 {
-    data.header          = operation_data_header;
-    operation_union.data = data;
+    data.header          = feedback_data_header;
+    feedback_union_.data = data;
     sendto(
-        socket_operation,
-        operation_union.code,
+        socket_feedback_,
+        operation_union_.code,
         sizeof(operation_data_union_t),
         ethernet_config::pc::ip,
-        ethernet_config::pc::port_operation
+        ethernet_config::pc::port_feedback
     );
 }
 
-bool RobotEthernet::receive_operation_data(operation_data_t* data)
+bool RobotEthernet::receive_operation_data(operation_data_t& data)
 {
     int32_t ret = recvfrom(
-        socket_operation,
-        operation_union.code,
+        socket_operation_,
+        operation_union_.code,
         sizeof(operation_data_union_t),
         ethernet_config::pc::ip,
         &ethernet_config::pc::port_operation
     );
     if (ret == sizeof(operation_data_union_t) &&
-        operation_union.data.header == operation_data_header) {
-        *data = operation_union.data;
+        operation_union_.data.header == operation_data_header) {
+        data = operation_union_.data;
         return true;
     }
     return false;

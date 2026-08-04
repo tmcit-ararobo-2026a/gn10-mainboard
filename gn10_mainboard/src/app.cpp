@@ -16,6 +16,7 @@
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/pid.hpp"
 #include "gn10_mainboard/robot_data_config.hpp"
+#include "gn10_mainboard/robot_ethernet.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
 #include "gn10_mainboard/robot_ethernet.hpp"
 // others
@@ -76,6 +77,8 @@ gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
 //Ethernet
 RobotEthernet robotethernet
 
+// Ethernet
+RobotEthernet ether;
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
@@ -120,6 +123,9 @@ void setup()
     if (!robot_ethernet.init()) {
     }
 
+    // Initialize Ethernet
+    // ether.init();
+
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
@@ -131,6 +137,7 @@ void loop()
 {
     // Get latest command from the Jetson
     if (robot_control_hub.get_command(operation)) {
+        // ether.receive_operation_data(operation);
     }
 
     // Set speed to ESC Hub for wheels
