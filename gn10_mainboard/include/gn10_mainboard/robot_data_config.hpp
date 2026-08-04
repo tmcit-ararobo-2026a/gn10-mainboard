@@ -38,3 +38,8 @@ struct operation_data_t {
     bool belt_init;
     uint8_t reserved[21];
 } __attribute__((__packed__));
+
+struct debug_data_t {
+    uint16_t header;  // ヘッダー
+    bool jetson_restart;
+} __attribute__((__packed__));

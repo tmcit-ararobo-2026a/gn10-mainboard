@@ -13,7 +13,8 @@ bool RobotEthernet::init()
         HAL_GPIO_WritePin(LED_RAD_GPIO_Port, LED_RAD_Pin, GPIO_PIN_SET);
         return false;
     }
-
+    uint8_t ver = getVERSIONR();  // または WIZCHIP_READ(VERSIONR);
+    log_printf(LOG_INFO, "W5500 Version: 0x%02X\n", ver);
     wizchip_setnetinfo(&ethernet_config::main_board::netInfo);
     // ネットワーク情報の確認
     wiz_NetInfo tmpNetInfo;
@@ -55,6 +56,12 @@ bool RobotEthernet::init()
         return false;
     }
 
+    socket(socket_debug_, Sn_MR_UDP, ethernet_config::main_board::port_debug, SF_IO_NONBLOCK);
+    setSn_CR(socket_debug_, Sn_CR_RECV);
+    if (getSn_SR(socket_debug_) == SOCK_UDP) {
+    } else {
+        return false;
+    }
     return true;
 }
 
@@ -68,6 +75,19 @@ void RobotEthernet::send_feedback_data(feedback_data_t data)
         sizeof(operation_data_union_t),
         ethernet_config::pc::ip,
         ethernet_config::pc::port_feedback
+    );
+}
+
+void RobotEthernet::send_debug_data(debug_data_t data)
+{
+    data.header       = 1;
+    debug_union_.data = data;
+    sendto(
+        socket_debug_,
+        debug_union_.code,
+        sizeof(debug_data_t),
+        ethernet_config::pc::ip,
+        ethernet_config::pc::port_debug
     );
 }
 
