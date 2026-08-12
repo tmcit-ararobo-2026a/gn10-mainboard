@@ -84,13 +84,11 @@ bool RobotEthernet::send_feedback_data(const robot_config::feedback_t& data)
     tx_data.value        = data;
     tx_data.value.header = robot_config::header::feedback;
 
-    int32_t len = sendto(
-        socket_cmd_,
-        tx_data.binary,
-        sizeof(tx_data),
-        robot_config::ip::pc_robot,
-        robot_config::port::cmd
-    );
+    uint8_t ip_address[4];
+    memcpy(ip_address, robot_config::ip::pc_robot, 4);
+
+    int32_t len =
+        sendto(socket_cmd_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::cmd);
 
     if (len != sizeof(robot_config::feedback_u)) return false;
     return true;
@@ -102,12 +100,11 @@ bool RobotEthernet::send_pc_debug_data(const robot_config::debug_pc_t& data)
     tx_data.value        = data;
     tx_data.value.header = robot_config::header::pc_debug;
 
+    uint8_t ip_address[4];
+    memcpy(ip_address, robot_config::ip::pc_robot, 4);
+
     int32_t len = sendto(
-        socket_debug_,
-        tx_data.binary,
-        sizeof(tx_data),
-        robot_config::ip::pc_robot,
-        robot_config::port::debug
+        socket_debug_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::debug
     );
 
     if (len != sizeof(robot_config::debug_pc_u)) return false;

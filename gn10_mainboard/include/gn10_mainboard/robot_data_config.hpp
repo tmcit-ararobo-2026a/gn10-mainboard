@@ -38,10 +38,10 @@ constexpr uint16_t debug  = 39244;
 }  // namespace port
 
 namespace ip {
-uint8_t mainboard[] = {192, 168, 3, 2};
-uint8_t pc_robot[]  = {192, 168, 3, 1};
-uint8_t pc_wifi[]   = {192, 168, 2, 1};
-uint8_t teleop[]    = {192, 168, 2, 2};
+constexpr uint8_t mainboard[] = {192, 168, 3, 2};
+constexpr uint8_t pc_robot[]  = {192, 168, 3, 1};
+constexpr uint8_t pc_wifi[]   = {192, 168, 2, 1};
+constexpr uint8_t teleop[]    = {192, 168, 2, 2};
 }  // namespace ip
 
 /**
