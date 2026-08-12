@@ -7,19 +7,55 @@
  *
  * @copyright Copyright (c) 2025
  *
+ * socket_cmd (port:26574)
+ *  |-  operation_data    pc          ->  main-board
+ *  |-  feedback_data     main-board  ->  pc
+ *
+ * socket_teleop (port:10410)
+ *  |-  teleop            robo-con    ->  pc ( main (in debug_mode))
+ *
+ * socket_debug (port:39244)
+ *  |-  pc_debug          main-board  ->  pc
+ *  |-  main_debug        pc          ->  main-board
  */
 #pragma once
 #include <stdint.h>
 
-constexpr uint16_t operation_data_header  = 0xAB36;
-constexpr uint16_t feedback_data_header   = 0x554A;
-constexpr uint16_t controller_data_header = 0x15A5;
-constexpr uint16_t pid_gain_data_header   = 0x5A5C;
+namespace robot_network_config {
 
+namespace header {
+constexpr uint16_t operation_data = 0xAB36;
+constexpr uint16_t feedback_data  = 0x554A;
+constexpr uint8_t teleop_data     = 0x15A5;
+constexpr uint16_t pc_debug       = 0x38F7;
+constexpr uint16_t main_debug     = 0x2A84;
+}  // namespace header
+
+namespace port {
+constexpr uint16_t cmd    = 26574;
+constexpr uint16_t teleop = 10410;
+constexpr uint16_t debug  = 39244;
+}  // namespace port
+
+namespace ip {
+constexpr uint8_t mainboard[] = {192, 168, 1, 2};
+constexpr uint8_t pc_robot[]  = {192, 168, 1, 1};
+constexpr uint8_t pc_wifi[]   = {192, 168, 2, 1};
+constexpr uint8_t teleop[]    = {192, 168, 2, 2};
+}  // namespace ip
+
+/**
+ * @brief ロボットのセンサ値などのフィードバック
+ *
+ */
 struct feedback_data_t {
     uint16_t header;  // ヘッダー
 } __attribute__((__packed__));
 
+/**
+ * @brief ロボットの動作司令値
+ *
+ */
 struct operation_data_t {
     uint16_t header;  // ヘッダー
     float wheel_front;
@@ -39,11 +75,10 @@ struct operation_data_t {
     uint8_t reserved[21];
 } __attribute__((__packed__));
 
-struct debug_data_t {
-    uint16_t header;  // ヘッダー
-    bool jetson_restart;
-} __attribute__((__packed__));
-
+/**
+ * @brief 操縦デバイスのレバーの傾きと押し込み
+ *
+ */
 enum lever_point_t {
     front,
     right,
@@ -53,9 +88,12 @@ enum lever_point_t {
     push,
 };
 
-struct controller_input_t {
+/**
+ * @brief ロボットの操縦信号値
+ *
+ */
+struct teleop_t {
     uint8_t header;  // 認識番号
-
     struct {
         struct {
             int8_t x;
@@ -97,7 +135,21 @@ struct controller_input_t {
 
 } __attribute__((__packed__));
 
-union controller_input_u {
-    controller_input_t input;
-    uint8_t data[8];
-};
+/**
+ * @brief PCのデバッグ用通信（再起動やスクリプト開始など）
+ *
+ */
+struct pc_debug_t {
+    uint16_t header;  // ヘッダー
+    bool jetson_restart;
+} __attribute__((__packed__));
+
+/**
+ * @brief メイン基板(RobotControlHub)のデバッグ用通信（制御モード切り替えなど）
+ *
+ */
+struct main_debug_t {
+    uint16_t header;
+} __attribute__((__packed__));
+
+}  // namespace robot_network_config

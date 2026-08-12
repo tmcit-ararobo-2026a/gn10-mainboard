@@ -26,7 +26,7 @@ constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
-operation_data_t operation;
+robot_network_config::operation_data_t operation;
 float vesc_velocities_feedbacks[4];
 
 /**
@@ -65,9 +65,10 @@ gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
 gn10_can::devices::MotorDriverClient motor_collect(can1_bus, 0);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
-gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
-    fdcan2_bus, 0
-);
+gn10_can::devices::RobotControlHubServer<
+    robot_network_config::operation_data_t,
+    robot_network_config::feedback_data_t>
+    robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
@@ -196,15 +197,15 @@ void loop()
 
     if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        debug_data_t debug_data;
+        robot_network_config::pc_debug_t debug_data;
         debug_data.jetson_restart = true;
-        ether.send_debug_data(debug_data);
+        ether.send_pc_debug_data(debug_data);
 
     } else {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-        debug_data_t debug_data;
+        robot_network_config::pc_debug_t debug_data;
         debug_data.jetson_restart = false;
-        ether.send_debug_data(debug_data);
+        ether.send_pc_debug_data(debug_data);
     }
     float desk_arm_velocities[4];
     desk_arm_velocities[0] = operation.desk_depth * 200.0f;
