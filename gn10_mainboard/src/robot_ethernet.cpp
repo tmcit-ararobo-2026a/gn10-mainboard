@@ -14,7 +14,7 @@ bool RobotEthernet::init()
         return false;
     }
     uint8_t ver = getVERSIONR();  // または WIZCHIP_READ(VERSIONR);
-    log_printf(LOG_INFO, "W5500 Version: 0x%02X\n", ver);
+    serial_printf("W5500 Version: 0x%02X\n", ver);
     wizchip_setnetinfo(&ethernet_config::main_board::netInfo);
     // ネットワーク情報の確認
     wiz_NetInfo tmpNetInfo;
