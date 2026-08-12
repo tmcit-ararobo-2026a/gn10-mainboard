@@ -150,7 +150,7 @@ void loop()
     }
 
     // Control the belt-type injection
-    if (operation.belt_init && !initilized_belt) {
+    if (operation.belt_init) {
         initilized_belt = true;
         vesc_hub.set_init(0, motor_config_belt);
     }
@@ -165,7 +165,12 @@ void loop()
     vesc_hub.set_angular_velocities(vesc_velocities);
 
     // Get latest belt angular velocity
-    if (esc_wheel.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+    if (vesc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
+        serial_printf("1:%f\n", vesc_velocities_feedbacks[0]);
+        serial_printf("2:%f\n", vesc_velocities_feedbacks[1]);
+        serial_printf("3:%f\n", vesc_velocities_feedbacks[2]);
+        serial_printf("4:%f\n", vesc_velocities_feedbacks[3]);
+        serial_printf("\n");
     }
 
     // Control the air-type injection
