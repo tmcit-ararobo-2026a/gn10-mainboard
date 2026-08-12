@@ -1,6 +1,6 @@
 /**
  * @file robot_data_config.hpp
- * @author aiba-gento
+ * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
  * @version 2.1
  * @date 2025-10-03
@@ -26,7 +26,7 @@ namespace robot_network_config {
 namespace header {
 constexpr uint16_t operation_data = 0xAB36;
 constexpr uint16_t feedback_data  = 0x554A;
-constexpr uint8_t teleop_data     = 0x15A5;
+constexpr uint8_t teleop_data     = 0xAA;
 constexpr uint16_t pc_debug       = 0x38F7;
 constexpr uint16_t main_debug     = 0x2A84;
 }  // namespace header
@@ -38,8 +38,8 @@ constexpr uint16_t debug  = 39244;
 }  // namespace port
 
 namespace ip {
-constexpr uint8_t mainboard[] = {192, 168, 1, 2};
-constexpr uint8_t pc_robot[]  = {192, 168, 1, 1};
+constexpr uint8_t mainboard[] = {192, 168, 3, 2};
+constexpr uint8_t pc_robot[]  = {192, 168, 3, 1};
 constexpr uint8_t pc_wifi[]   = {192, 168, 2, 1};
 constexpr uint8_t teleop[]    = {192, 168, 2, 2};
 }  // namespace ip
