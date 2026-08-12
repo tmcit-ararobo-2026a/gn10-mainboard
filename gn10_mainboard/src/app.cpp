@@ -14,7 +14,6 @@
 // gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
-#include "gn10_mainboard/robot_data_config.hpp"
 #include "gn10_mainboard/robot_ethernet.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
 #include "gn10_mainboard/three_wheel_omni.hpp"

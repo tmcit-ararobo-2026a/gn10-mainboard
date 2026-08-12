@@ -1,5 +1,5 @@
 #pragma once
-#include "gn10_mainboard/robot_data_config.hpp"
+#include "gn10_mainboard/robot_config.hpp"
 
 class RobotEthernet
 {
