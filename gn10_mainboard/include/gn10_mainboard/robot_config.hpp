@@ -71,7 +71,7 @@ struct operation_t {
     bool air_rauncher_for_desk_l;
     // 机上雑巾回収 2byte
     uint8_t desk_arm_pos;  //[cm]
-    bool desk_arm_tip_angle;
+    bool desk_arm_hold;
     // 状態表示 2byte
     int8_t target_bucket_angle_roll;
     int8_t target_bucket_angle_pitch;
