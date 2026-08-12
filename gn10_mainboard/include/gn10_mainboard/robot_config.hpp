@@ -59,7 +59,7 @@ struct operation_t {
     uint8_t bucket_arm_hight;  //[cm]
     uint8_t bucket_arm_hold;
     // 装填機構 2byte
-    uint8_t loading_hook_pos;  //[phase]
+    uint8_t loading_hook_phase;  //[phase]
     bool loading_shift_cloth;
     // ベルト直動 6byte
     float belt_vel;  //[m/s]
