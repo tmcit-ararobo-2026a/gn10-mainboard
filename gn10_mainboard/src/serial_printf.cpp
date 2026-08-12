@@ -6,7 +6,7 @@ void serial_printf(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    int len = std::vsprintf(buffer, fmt, args);
+    int len = std::vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
     if (len <= 0) {
         return;
