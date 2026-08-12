@@ -1,5 +1,10 @@
 #include "gn10_mainboard/serial_printf.hpp"
 
+#include <cstdarg>
+#include <cstdint>
+
+#include "usart.h"
+
 void serial_printf(const char* fmt, ...)
 {
     char buffer[256];
