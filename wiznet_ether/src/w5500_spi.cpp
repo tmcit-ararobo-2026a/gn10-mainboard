@@ -52,13 +52,15 @@ uint8_t SPIReadWrite(uint8_t data)
  * @brief W5500のCSを選択する
  *
  */
-void wizchip_select(void) {}
+void wizchip_select(void)
+{
+    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);  // CSをLOWに
+}
 
-/**
- * @brief W5500のCSを解除する
- *
- */
-void wizchip_deselect(void) {}
+void wizchip_deselect(void)
+{
+    HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);  // CSをHIGHに
+}
 
 /**
  * @brief W5500にデータを書き込む

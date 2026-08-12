@@ -118,7 +118,7 @@ void setup()
     }
 
     // Initialize Ethernet
-    // ether.init();
+    ether.init();
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
@@ -187,6 +187,20 @@ void loop()
     arm_velocities[3] = 0.0f;
     esc_arm.set_angular_velocities(arm_velocities);
 
+    // ボタンが押されたら送る処理
+
+    if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+        debug_data_t debug_data;
+        debug_data.jetson_restart = true;
+        ether.send_debug_data(debug_data);
+
+    } else {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+        debug_data_t debug_data;
+        debug_data.jetson_restart = false;
+        ether.send_debug_data(debug_data);
+    }
     float desk_arm_velocities[4];
     desk_arm_velocities[0] = operation.desk_depth * 200.0f;
     desk_arm_velocities[1] = operation.desk_lift * 200.0f;

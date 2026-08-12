@@ -57,6 +57,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define operation_button1_Pin GPIO_PIN_0
+#define operation_button1_GPIO_Port GPIOC
+#define operation_button2_Pin GPIO_PIN_1
+#define operation_button2_GPIO_Port GPIOC
+#define operation_button3_Pin GPIO_PIN_0
+#define operation_button3_GPIO_Port GPIOA
+#define operation_button4_Pin GPIO_PIN_1
+#define operation_button4_GPIO_Port GPIOA
 #define W5500_RST_Pin GPIO_PIN_4
 #define W5500_RST_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_4
