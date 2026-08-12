@@ -48,48 +48,51 @@ enum lever_point_t {
     push,
 };
 
-union controller_input_u {
+struct controller_input_t {
+    uint8_t header;  // 認識番号
+
     struct {
         struct {
-            struct {
-                uint8_t x;
-                uint8_t y;
-                bool push;
-            } right;
-            struct {
-                uint8_t x;
-                uint8_t y;
-                bool push;
-            } left;
-        } stick;  // 34 bit = 4Byte + 2bit
-
+            int8_t x;
+            int8_t y;
+            uint8_t push : 1;
+        } __attribute__((__packed__)) right;
         struct {
-            lever_point_t right : 3;
-            lever_point_t left  : 3;
-        } lever;  // 6 bit
+            int8_t x;
+            int8_t y;
+            uint8_t push : 1;
+        } __attribute__((__packed__)) left;
+    } __attribute__((__packed__)) stick;  // 34 bit = 4Byte + 2bit
 
+    struct {
+        lever_point_t right : 3;
+        lever_point_t left  : 3;
+    } __attribute__((__packed__)) lever;  // 6 bit
+
+    struct {
         struct {
-            struct {
-                bool button_5;
-                bool button_6;
-                bool button_7;
-            } right;
-            struct {
-                bool button_1;
-                bool button_2;
-                bool button_3;
-                bool button_4;
-            } left;
-            bool received;
-        } button;  // 1Byte
+            uint8_t button_5 : 1;
+            uint8_t button_6 : 1;
+            uint8_t button_7 : 1;
+        } __attribute__((__packed__)) right;
+        struct {
+            uint8_t button_1 : 1;
+            uint8_t button_2 : 1;
+            uint8_t button_3 : 1;
+            uint8_t button_4 : 1;
+        } __attribute__((__packed__)) left;
+        uint8_t reserved : 1;
+    } __attribute__((__packed__)) button;  // 1Byte
 
-        uint8_t data_CRC;  // 1Byte
-        /***
-         * CRC以外を除いた6Byteの和の補数
-         * ただし計算結果の8bitより大きい値は切り捨て
-         */
+    uint8_t data_CRC;  // 1Byte
+    /***
+     * CRC以外を除いた6Byteの和の補数
+     * ただし計算結果の8bitより大きい値は切り捨て
+     */
 
-    } __attribute__((__packed__));
+} __attribute__((__packed__));
 
-    uint8_t data[7];
+union controller_input_u {
+    controller_input_t input;
+    uint8_t data[8];
 };
