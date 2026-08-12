@@ -1,21 +1,18 @@
 #include "gn10_mainboard/serial_printf.hpp"
 
-template void serial_printf<>(const std::string& fmt);
-template void serial_printf<
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char>(
-    const std::string& fmt,
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char,
-    unsigned char
-);
-template void serial_printf<unsigned char, unsigned char, unsigned char, unsigned char>(
-    const std::string& fmt, unsigned char, unsigned char, unsigned char, unsigned char
-);
+void serial_printf(const char* fmt, ...)
+{
+    char buffer[256];
+    va_list args;
+    va_start(args, fmt);
+
+    int len = std::vsprintf(buffer, fmt, args);
+    va_end(args);
+    if (len <= 0) {
+        return;
+    }
+    if ((unsigned int)len >= sizeof(buffer)) {
+        len = sizeof(buffer) - 1;
+    }
+    HAL_UART_Transmit(&huart1, (uint8_t*)&buffer[0], len, 0xFF);
+}

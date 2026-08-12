@@ -18,8 +18,7 @@ bool RobotEthernet::init()
     // ネットワーク情報の確認
     wiz_NetInfo tmpNetInfo;
     wizchip_getnetinfo(&tmpNetInfo);
-    log_printf(
-        LOG_INFO,
+    serial_printf(
         "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
         tmpNetInfo.mac[0],
         tmpNetInfo.mac[1],
@@ -28,13 +27,8 @@ bool RobotEthernet::init()
         tmpNetInfo.mac[4],
         tmpNetInfo.mac[5]
     );
-    log_printf(
-        LOG_INFO,
-        "IP: %d.%d.%d.%d\n",
-        tmpNetInfo.ip[0],
-        tmpNetInfo.ip[1],
-        tmpNetInfo.ip[2],
-        tmpNetInfo.ip[3]
+    serial_printf(
+        "IP: %d.%d.%d.%d\n", tmpNetInfo.ip[0], tmpNetInfo.ip[1], tmpNetInfo.ip[2], tmpNetInfo.ip[3]
     );
 
     setRCR(1);
