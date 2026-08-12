@@ -21,13 +21,27 @@ bool RobotEthernet::init()
 
     // ネットワーク情報の設定
     wiz_NetInfo_t net_info = {
-        .mac  = {0x48, 0x47, 0x85, 0xA3, 0x8B, 0xF2},
-        .ip   = *robot_config::ip::mainboard,
-        .sn   = {255, 255, 255, 0},
-        .gw   = *robot_config::ip::pc_robot, // ロボット内部LANのゲートウェイはPC
-        .dns  = {0, 0, 0, 0},
+        .mac = {0x48, 0x47, 0x85, 0xA3, 0x8B, 0xF2},
+
+        .ip =
+            {robot_config::ip::mainboard[0],
+                robot_config::ip::mainboard[1],
+                robot_config::ip::mainboard[2],
+                robot_config::ip::mainboard[3]},
+
+        .sn = {255, 255, 255, 0},
+
+        .gw =
+            {robot_config::ip::pc_robot[0],
+                robot_config::ip::pc_robot[1],
+                robot_config::ip::pc_robot[2],
+                robot_config::ip::pc_robot[3]}, // ロボット内部LANのゲートウェイはPC
+
+        .dns = {0, 0, 0, 0},
+
         .dhcp = NETINFO_STATIC
     };
+
     wizchip_setnetinfo(&net_info);
 
     // ネットワーク情報の確認
