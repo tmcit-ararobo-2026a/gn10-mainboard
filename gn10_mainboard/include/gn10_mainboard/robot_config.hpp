@@ -48,7 +48,7 @@ constexpr uint8_t teleop[]    = {192, 168, 2, 2};
  * @brief ロボットの動作司令値 32byte
  *
  */
-struct operation_t {
+struct command_t {
     // 識別ヘッダー 1byte
     uint8_t header;
     // 足回り 12byte
@@ -79,12 +79,12 @@ struct operation_t {
     uint8_t reserved[2];
 } __attribute__((__packed__));
 
-union operation_u {
-    robot_config::operation_t value;                    // 操作データ
-    uint8_t binary[sizeof(robot_config::operation_t)];  // 送信バイト配列
+union command_u {
+    command_t value;                    // 操作データ
+    uint8_t binary[sizeof(command_t)];  // 送信バイト配列
 } __attribute__((__packed__));
 
-static_assert(sizeof(operation_t) == 32);
+static_assert(sizeof(command_t) == 32);
 
 /**
  * @brief ロボットのセンサ値などのフィードバック
@@ -95,8 +95,8 @@ struct feedback_t {
 } __attribute__((__packed__));
 
 union feedback_u {
-    robot_config::feedback_t value;
-    uint8_t binary[sizeof(robot_config::feedback_t)];
+    feedback_t value;
+    uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
 static_assert(sizeof(feedback_t) == 1);
@@ -149,8 +149,8 @@ struct teleop_t {
 } __attribute__((__packed__));
 
 union teleop_u {
-    robot_config::teleop_t value;
-    uint8_t binary[sizeof(robot_config::teleop_t)];
+    teleop_t value;
+    uint8_t binary[sizeof(teleop_t)];
 } __attribute__((__packed__));
 
 static_assert(sizeof(teleop_t) == 8);
@@ -165,8 +165,8 @@ struct debug_pc_t {
 } __attribute__((__packed__));
 
 union debug_pc_u {
-    robot_config::debug_pc_t value;
-    uint8_t binary[sizeof(robot_config::debug_pc_t)];
+    debug_pc_t value;
+    uint8_t binary[sizeof(debug_pc_t)];
 } __attribute__((__packed__));
 
 /**
@@ -178,8 +178,8 @@ struct debug_main_t {
 } __attribute__((__packed__));
 
 union debug_main_u {
-    robot_config::debug_main_t value;
-    uint8_t binary[sizeof(robot_config::debug_main_t)];
+    debug_main_t value;
+    uint8_t binary[sizeof(debug_main_t)];
 } __attribute__((__packed__));
 
 }  // namespace robot_config

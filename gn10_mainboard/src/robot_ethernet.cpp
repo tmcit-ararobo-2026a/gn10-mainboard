@@ -72,17 +72,17 @@ bool RobotEthernet::init()
     return true;
 }
 
-bool RobotEthernet::receive_operation_data(robot_config::operation_t& data)
+bool RobotEthernet::receive_operation_data(robot_config::command_t& data)
 {
-    robot_config::operation_u rx_data;
+    robot_config::command_u rx_data;
     uint8_t source_address[4];
     uint16_t source_port;
 
     int32_t ret = recvfrom(
-        socket_cmd_, rx_data.binary, sizeof(robot_config::operation_u), source_address, &source_port
+        socket_cmd_, rx_data.binary, sizeof(robot_config::command_u), source_address, &source_port
     );
     // データ整合性チェック
-    if (ret != sizeof(robot_config::operation_u)) return false;
+    if (ret != sizeof(robot_config::command_u)) return false;
     if (rx_data.value.header != robot_config::header::operation) return false;
     // 送信元チェック
     if (std::memcmp(source_address, robot_config::ip::pc_robot, 4) != 0) return false;

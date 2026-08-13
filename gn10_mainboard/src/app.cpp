@@ -25,7 +25,7 @@ constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
-robot_config::operation_t operation;
+robot_config::command_t operation;
 float vesc_velocities_feedbacks[4];
 
 /**
@@ -57,7 +57,7 @@ gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
 gn10_can::devices::MotorDriverClient motor_collect(can1_bus, 0);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
-gn10_can::devices::RobotControlHubServer<robot_config::operation_t, robot_config::feedback_t>
+gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
     robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
