@@ -8,8 +8,9 @@ public:
         teleop_ = teleop;
 
         // 足回り
-        command_.x_vel = teleop_.analog.stick_left[0];
-        command_.y_vel = teleop_.analog.stick_left[1];
+        command_.x_vel       = teleop_.analog.stick_left[0];
+        command_.y_vel       = teleop_.analog.stick_left[1];
+        command_.angular_vel = teleop_.analog.stick_right[0];
 
         // backet
         if (teleop_.buttons.up) {
@@ -23,23 +24,18 @@ public:
             command_.bucket_arm_hold -= 10;
         }
 
-        // 机上回収
-        if (teleop_.buttons.triangle && !triangle_last) {
-            if (!command_.desk_arm_open) {
-                command_.desk_arm_open = true;
-            } else {
-                command_.desk_arm_open = false;
-            }
+        /* 机上回収 */
+
+        // 引き入れ
+        if (teleop_.buttons.triangle) {
+            command_.desk_arm_pos += 10;
+        } else if (teleop_.buttons.cross) {
+            command_.desk_arm_pos -= 10;
         }
 
-        triangle_last = teleop_.buttons.triangle;
-
+        // アーム曲げ
         if (teleop_.buttons.circle && !circle_last) {
-            if (!command_.desk_arm_push) {
-                command_.desk_arm_push = true;
-            } else {
-                command_.desk_arm_push = false;
-            }
+            command_.desk_arm_hold = !command_.desk_arm_hold;
         }
         circle_last = teleop_.buttons.circle;
 
@@ -79,8 +75,7 @@ public:
                 break;
         }
 
-        if (teleop_.buttons.lever_left == robot_config::LeverPosition::PUSH ||
-            teleop_.buttons.lever_right == robot_config::LeverPosition::PUSH) {
+        if (teleop_.buttons.stick_push_left || teleop_.buttons.stick_push_right) {
             command_.belt_init = true;
         } else {
             command_.belt_init = false;
@@ -132,7 +127,6 @@ public:
 private:
     robot_config::teleop_t teleop_;
     robot_config::command_t command_;
-    uint8_t count      = 1;
-    bool triangle_last = false;  // edge
-    bool circle_last   = false;
+    uint8_t count    = 1;
+    bool circle_last = false;
 };
