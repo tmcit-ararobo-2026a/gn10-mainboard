@@ -70,8 +70,8 @@ struct command_t {
     bool air_rauncher_for_desk_r;
     bool air_rauncher_for_desk_l;
     // 机上雑巾回収 2byte
-    uint8_t desk_arm_pos;  //[cm]
-    bool desk_arm_hold;
+    bool desk_arm_open;  //[cm]
+    bool desk_arm_push;
     // 状態表示 2byte
     int8_t target_bucket_angle_roll;
     int8_t target_bucket_angle_pitch;

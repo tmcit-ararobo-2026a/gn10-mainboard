@@ -7,6 +7,7 @@ add_library(gn10_mainboard STATIC
     src/can_driver.cpp
     src/serial_printf.cpp
     src/robot_ethernet.cpp
+    src/conversion_command.cpp
 )
 
 target_include_directories(gn10_mainboard PUBLIC
