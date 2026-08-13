@@ -14,10 +14,9 @@
 // gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
-#include "gn10_mainboard/pid.hpp"
-#include "gn10_mainboard/robot_data_config.hpp"
 #include "gn10_mainboard/robot_ethernet.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
+#include "gn10_mainboard/three_wheel_omni.hpp"
 // others
 
 namespace {
@@ -26,7 +25,7 @@ constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
-operation_data_t operation;
+robot_config::operation_t operation;
 float vesc_velocities_feedbacks[4];
 
 /**
@@ -38,13 +37,6 @@ void update_heartbeat_led()
     if ((now_ms - heartbeat_last_toggle_time_ms) >= k_heartbeat_toggle_interval_ms) {
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-        /* serial_printf(
-            "f:%f,bl:%f,br:%f\n",
-            operation.wheel_front,
-            operation.wheel_back_left,
-            operation.wheel_back_right
-        ); */
-        // serial_printf("%f\n", vesc_velocities_feedbacks[0]);
     }
 }
 
@@ -65,9 +57,8 @@ gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
 gn10_can::devices::MotorDriverClient motor_collect(can1_bus, 0);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
-gn10_can::devices::RobotControlHubServer<operation_data_t, feedback_data_t> robot_control_hub(
-    fdcan2_bus, 0
-);
+gn10_can::devices::RobotControlHubServer<robot_config::operation_t, robot_config::feedback_t>
+    robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
@@ -79,6 +70,9 @@ RobotEthernet ether;
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
+// Inverse Kinematics
+ThreeWheelOmni omni(0.5f, 0.1f);
+constexpr float M3508_GEAR_RATIO = 19.0f;
 
 }  // namespace
 
@@ -135,19 +129,15 @@ void loop()
     }
 
     // Set speed to ESC Hub for wheels
+    omni.convert(operation.x_vel, operation.y_vel, operation.angular_vel, 0.0f);
+    float front, right, left;
+    omni.getWheelAngularVelocity(&front, &left, &right);
     float wheel_angular_velocites[4];
-    wheel_angular_velocites[0] = operation.wheel_front * 19.0f;
-    wheel_angular_velocites[1] = operation.wheel_back_left * 19.0f;
-    wheel_angular_velocites[2] = operation.wheel_back_right * 19.0f;
+    wheel_angular_velocites[0] = front * M3508_GEAR_RATIO;
+    wheel_angular_velocites[1] = left * M3508_GEAR_RATIO;
+    wheel_angular_velocites[2] = right * M3508_GEAR_RATIO;
     wheel_angular_velocites[3] = 0.0f;
     esc_wheel.set_angular_velocities(wheel_angular_velocites);
-
-    // Control the dust cloths collector
-    if (operation.collect) {
-        motor_collect.set_target(1.0f);
-    } else {
-        motor_collect.set_target(0.0f);
-    }
 
     // Control the belt-type injection
     if (operation.belt_init) {
@@ -156,7 +146,7 @@ void loop()
     }
 
     if (operation.belt_throw && initilized_belt) {
-        vesc_vel = (float)operation.belt_velocity;
+        vesc_vel = (float)operation.belt_vel;
     } else {
         vesc_vel = 0.0f;
     }
@@ -175,42 +165,30 @@ void loop()
 
     // Control the air-type injection
     std::array<bool, 8> targets{};
-    for (size_t i = 0; i < 8; i++) {
-        targets[i] = operation.air_throw;
-    }
+    targets[0] = operation.air_rauncher_for_flag;
+    targets[1] = operation.air_rauncher_for_desk_r;
+    targets[2] = operation.air_rauncher_for_desk_l;
     solenoid.set_target(targets);
 
     // Control the arm with C610
     float arm_velocities[4];
-    arm_velocities[0] = operation.arm_horizontal * 200.0f;
-    arm_velocities[1] = operation.arm_vertical * 200.0f;
-    if (operation.arm_hold) {
-        arm_velocities[2] = 200.0f;
-    } else {
-        arm_velocities[2] = 0.0f;
-    }
-    arm_velocities[3] = 0.0f;
     esc_arm.set_angular_velocities(arm_velocities);
 
     // ボタンが押されたら送る処理
 
     if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        debug_data_t debug_data;
+        robot_config::debug_pc_t debug_data;
         debug_data.jetson_restart = true;
-        ether.send_debug_data(debug_data);
+        ether.send_pc_debug_data(debug_data);
 
     } else {
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-        debug_data_t debug_data;
+        robot_config::debug_pc_t debug_data;
         debug_data.jetson_restart = false;
-        ether.send_debug_data(debug_data);
+        ether.send_pc_debug_data(debug_data);
     }
     float desk_arm_velocities[4];
-    desk_arm_velocities[0] = operation.desk_depth * 200.0f;
-    desk_arm_velocities[1] = operation.desk_lift * 200.0f;
-    desk_arm_velocities[2] = operation.desk_finger * 200.0f;
-    desk_arm_velocities[3] = 0.0f;
     desk_arm.set_angular_velocities(desk_arm_velocities);
     // Basic System Process
     update_heartbeat_led();
