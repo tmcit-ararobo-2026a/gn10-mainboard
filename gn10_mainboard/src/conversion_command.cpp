@@ -44,15 +44,7 @@ public:
         circle_last = teleop_.buttons.circle;
 
         // 装填機構
-        if (teleop_.buttons.cross && !cross_last) {
-            if (!command_.loading_shift_cloth) {
-                command_.loading_shift_cloth = true;
-            } else {
-                command_.loading_shift_cloth = false;
-            }
-        }
-
-        cross_last = teleop_.buttons.cross;
+        command_.loading_shift_cloth = teleop_.buttons.cross;
 
         // ベルト直動
         switch (teleop_.buttons.lever_right) {
@@ -143,5 +135,4 @@ private:
     uint8_t count      = 1;
     bool triangle_last = false;  // edge
     bool circle_last   = false;
-    bool cross_last    = false;
 };
