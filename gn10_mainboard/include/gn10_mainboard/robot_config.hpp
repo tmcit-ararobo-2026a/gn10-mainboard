@@ -92,6 +92,7 @@ static_assert(sizeof(command_t) == 32);
  */
 struct feedback_t {
     uint8_t header;  // ヘッダー
+    float belt_vel_last;
 } __attribute__((__packed__));
 
 union feedback_u {
@@ -99,7 +100,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 1);
+static_assert(sizeof(feedback_t) == 5);
 
 /**
  * @brief 操縦デバイスのレバーの傾きと押し込み
