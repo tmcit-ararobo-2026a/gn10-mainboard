@@ -12,11 +12,11 @@ public:
         command_.y_vel       = teleop_.analog.stick_left[1];
         command_.angular_vel = teleop_.analog.stick_right[0];
 
-        // backet
+        /*バケツ回収 limitは受信側でかけること！*/
         if (teleop_.buttons.up) {
-            command_.bucket_arm_hight += 10;  // アホ
+            command_.bucket_arm_hight += 10;
         } else if (teleop_.buttons.down) {
-            command_.bucket_arm_hight -= 10;  // アホ
+            command_.bucket_arm_hight -= 10;
         }
         if (teleop_.buttons.right) {
             command_.bucket_arm_hold += 10;
@@ -24,8 +24,7 @@ public:
             command_.bucket_arm_hold -= 10;
         }
 
-        /* 机上回収 */
-
+        /* 机上回収  limitは受信側でかけること!*/
         // 引き入れ
         if (teleop_.buttons.triangle) {
             command_.desk_arm_pos += 10;
@@ -39,10 +38,10 @@ public:
         }
         circle_last = teleop_.buttons.circle;
 
-        // 装填機構
+        /*装填機構*/
         command_.loading_shift_cloth = teleop_.buttons.cross;
 
-        // ベルト直動
+        /*ベルト直動*/
         switch (teleop_.buttons.lever_right) {
             case robot_config::LeverPosition::FRONT:
                 break;
@@ -75,6 +74,7 @@ public:
                 break;
         }
 
+        // init処理
         if (teleop_.buttons.stick_push_left || teleop_.buttons.stick_push_right) {
             command_.belt_init = true;
         } else {
@@ -127,6 +127,6 @@ public:
 private:
     robot_config::teleop_t teleop_;
     robot_config::command_t command_;
-    uint8_t count    = 1;
+    uint8_t count    = 1;  // エアシリンダー射出先: 0=desk_l, 1=flag, 2=desk_r
     bool circle_last = false;
 };
