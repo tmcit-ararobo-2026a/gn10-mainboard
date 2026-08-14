@@ -13,6 +13,7 @@
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
+#include "gn10_mainboard/conversion_command.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/robot_ethernet.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
@@ -73,7 +74,8 @@ float vesc_vel       = 0.0f;
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
-
+// Controller conversion
+ConversionCommand command;
 }  // namespace
 
 /**
