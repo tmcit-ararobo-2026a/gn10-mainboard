@@ -15,12 +15,12 @@ void ConversionCommand::set_belt_vel(const uint8_t belt_vel)
     belt_vel_ = belt_vel;
 }
 
-void ConversionCommand::set_bucket_distance_value(const uint8_t bucket_distance)
+void ConversionCommand::set_bucket_move_value(const uint8_t bucket_distance)
 {
     bucket_distance_ = bucket_distance;
 }
 
-void ConversionCommand::set_desk_distance_value(const uint8_t desk_distance)
+void ConversionCommand::set_desk_move_value(const uint8_t desk_distance)
 {
     desk_distance_ = desk_distance;
 }
