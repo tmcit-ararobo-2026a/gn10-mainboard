@@ -75,7 +75,6 @@ float vesc_vel       = 0.0f;
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // Controller conversion
-ConversionCommand command;
 }  // namespace
 
 /**
