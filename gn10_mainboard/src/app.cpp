@@ -196,14 +196,17 @@ void loop()
     GPIO_PinState current_state2 =
         HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin);
     if (prev_state2 == GPIO_PIN_RESET && current_state2 == GPIO_PIN_SET) {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
         robot_config::debug_pc_t debug_data;
         debug_data.jetson_shutdown = true;
         ether.send_pc_debug_data(debug_data);
     } else if (prev_state2 == GPIO_PIN_SET && current_state2 == GPIO_PIN_RESET) {
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
         robot_config::debug_pc_t debug_data;
         debug_data.jetson_shutdown = false;
         ether.send_pc_debug_data(debug_data);
     }
+    prev_state2 = current_state2;
     // ボタン3が押されたときの処理
     static GPIO_PinState prev_state3 = GPIO_PIN_RESET;
     GPIO_PinState current_state3 =
