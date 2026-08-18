@@ -62,9 +62,13 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     }
 
     /* 机上回収 */
-    // 引き入れ toggleni変更
+    // 引き入れ
     if (teleop.buttons.left && !teleop_last_.buttons.left) {
-        command_.desk_arm_pos = !command_.desk_arm_pos;
+        if (desk_init_pos) {
+            desk_pos = !desk_pos;
+        } else {
+            desk_init_pos = true;
+        }
     }
 
     // アーム曲げ

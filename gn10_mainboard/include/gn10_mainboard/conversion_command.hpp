@@ -40,6 +40,9 @@ private:
     uint8_t belt_change_value_;
     uint8_t belt_change_value_d_;
 
+    bool desk_pos      = false;
+    bool desk_init_pos = false;
+
     //
     uint8_t bucket_arm_hight_ = 0;
 };
