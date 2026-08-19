@@ -27,7 +27,7 @@ void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
 /* bucket */
 void ConversionCommand::set_bucket_move_value(const uint8_t bucket_move_value)
 {
-    bucket_high_value_ = bucket_move_value;
+    bucket_hight_value_ = bucket_move_value;
 }
 
 void ConversionCommand::set_bucket_limit_value(
@@ -120,9 +120,9 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     /*バケツ回収*/
     // 昇降機構
     if (teleop.buttons.up) {
-        bucket_arm_hight_ += bucket_high_value_;
+        bucket_arm_hight_ += bucket_hight_value_;
     } else if (teleop.buttons.down) {
-        bucket_arm_hight_ -= bucket_high_value_;
+        bucket_arm_hight_ -= bucket_hight_value_;
     } else {
         bucket_arm_hight_ += 0;
     }

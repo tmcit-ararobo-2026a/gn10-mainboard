@@ -46,7 +46,7 @@ private:
     uint8_t belt_change_value_deep_;
 
     // bucket
-    uint8_t bucket_high_value_;
+    uint8_t bucket_hight_value_;
     int16_t bucket_limit_high_;
     int16_t bucket_limit_low_;
 
