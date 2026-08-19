@@ -66,13 +66,16 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     float angular_vel;
 
     // x velocity
-    x_vel = static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX * wheel_max_vel_;
-
+    x_vel = std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
+            wheel_max_vel_;
     // y velocity
-    y_vel = static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX * wheel_max_vel_;
+    y_vel = std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
+            wheel_max_vel_;
 
     // angular velocity
-    angular_vel = static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX * angular_max_vel_;
+    angular_vel =
+        std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
+        angular_max_vel_;
 
     command_.x_vel       = x_vel;
     command_.y_vel       = y_vel;
