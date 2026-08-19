@@ -4,7 +4,7 @@ class ConversionCommand
 {
 public:
     ConversionCommand(
-        uint8_t bucket_limit_h, uint8_t bucket_limit_l, uint8_t desk_limit_h, uint8_t desk_limit_l
+        int16_t bucket_limit_h, int16_t bucket_limit_l, int16_t desk_limit_h, int16_t desk_limit_l
     );
 
     void set_init_belt_vel(const uint8_t belt_init_vel);
@@ -27,22 +27,22 @@ private:
     uint8_t air_rauncher_selector_ = 1;
 
     // constructor
-    uint8_t bucket_limit_h_;
-    uint8_t bucket_limit_l_;
-    uint8_t desk_limit_h_;
-    uint8_t desk_limit_l_;
+    int16_t bucket_limit_h_;
+    int16_t bucket_limit_l_;
+    int16_t desk_limit_h_;
+    int16_t desk_limit_l_;
 
     // seter
-    uint8_t belt_vel_;
-    uint8_t belt_init_vel_;
-    uint8_t bucket_move_value_;
-    uint8_t desk_move_value_;
+    uint8_t belt_vel_          = 0;
+    uint8_t belt_init_vel_     = 0;
+    uint8_t bucket_high_value_ = 0;
+    int16_t desk_move_value_;
     uint8_t belt_change_value_;
     uint8_t belt_change_value_d_;
 
-    bool desk_pos      = false;
-    bool desk_init_pos = false;
+    int16_t desk_pos_;
+    bool desk_pos_m = false;
 
     //
-    uint8_t bucket_arm_hight_ = 0;
+    int16_t bucket_arm_hight_ = 0;
 };

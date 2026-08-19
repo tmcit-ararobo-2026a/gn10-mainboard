@@ -3,7 +3,7 @@
 #include <algorithm>
 
 ConversionCommand::ConversionCommand(
-    uint8_t bucket_limit_h, uint8_t bucket_limit_l, uint8_t desk_limit_h, uint8_t desk_limit_l
+    int16_t bucket_limit_h, int16_t bucket_limit_l, int16_t desk_limit_h, int16_t desk_limit_l
 )
     : bucket_limit_h_(bucket_limit_h),
       bucket_limit_l_(bucket_limit_l),
@@ -20,7 +20,7 @@ void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
 
 void ConversionCommand::set_bucket_move_value(const uint8_t bucket_move_value)
 {
-    bucket_move_value_ = bucket_move_value;
+    bucket_high_value_ = bucket_move_value;
 }
 
 void ConversionCommand::set_desk_move_value(const uint8_t desk_distance)
@@ -49,9 +49,11 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     /*バケツ回収*/
     // 昇降機構
     if (teleop.buttons.up) {
-        bucket_arm_hight_ += bucket_move_value_;
+        bucket_arm_hight_ += bucket_high_value_;
     } else if (teleop.buttons.down) {
-        bucket_arm_hight_ -= bucket_move_value_;
+        bucket_arm_hight_ -= bucket_high_value_;
+    } else {
+        bucket_arm_hight_ += 0;
     }
     bucket_arm_hight_         = std::clamp(bucket_arm_hight_, bucket_limit_l_, bucket_limit_h_);
     command_.bucket_arm_hight = bucket_arm_hight_;
@@ -64,12 +66,15 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     /* 机上回収 */
     // 引き入れ
     if (teleop.buttons.left && !teleop_last_.buttons.left) {
-        if (desk_init_pos) {
-            desk_pos = !desk_pos;
-        } else {
-            desk_init_pos = true;
-        }
+        desk_pos_m = !desk_pos_m;
     }
+
+    if (desk_pos_m) {
+        desk_pos_ += desk_move_value_;
+    } else {
+        desk_pos_ -= desk_move_value_;
+    }
+    desk_pos_ = std::clamp(desk_pos_, desk_limit_l_, desk_limit_h_);
 
     // アーム曲げ
     if (teleop.buttons.cross && !teleop_last_.buttons.cross) {
