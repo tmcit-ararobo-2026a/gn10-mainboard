@@ -11,6 +11,7 @@ public:
 
     void set_belt_vel_adjust_value(float belt_vel_adjust_value);
 
+    // 初期値0.5
     void set_lever_degree_ofattenuation(float lever_degree_ofattenuation);
 
     /*bucket関連*/
