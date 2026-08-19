@@ -43,17 +43,17 @@ private:
     // belt
     uint8_t belt_init_vel_;
     uint8_t belt_change_value_;
-    uint8_t belt_change_value_d_;
+    uint8_t belt_change_value_deep_;
 
     // bucket
     uint8_t bucket_high_value_;
-    int16_t bucket_limit_h_;
-    int16_t bucket_limit_l_;
+    int16_t bucket_limit_high_;
+    int16_t bucket_limit_low_;
 
     // desk
     int16_t desk_move_value_;
-    int16_t desk_limit_h_;
-    int16_t desk_limit_l_;
+    int16_t desk_limit_high_;
+    int16_t desk_limit_low_;
 
     // wheel
     float max_wheel_vel_;

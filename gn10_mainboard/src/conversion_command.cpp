@@ -15,7 +15,7 @@ void ConversionCommand::set_belt_change_value(const uint8_t change_value)
 
 void ConversionCommand::set_belt_change_value_deep(const uint8_t change_value_d)
 {
-    belt_change_value_d_ = change_value_d;
+    belt_change_value_deep_ = change_value_d;
 }
 
 void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
@@ -34,8 +34,8 @@ void ConversionCommand::set_bucket_limit_value(
     const int16_t bucket_limit_high, const int16_t bucket_limit_low
 )
 {
-    bucket_limit_h_ = bucket_limit_high;
-    bucket_limit_l_ = bucket_limit_low;
+    bucket_limit_high_ = bucket_limit_high;
+    bucket_limit_low_  = bucket_limit_low;
 }
 
 /* desk */
@@ -48,8 +48,8 @@ void ConversionCommand::set_desk_limit_value(
     const int16_t desk_limit_high, const int16_t desk_limit_low
 )
 {
-    desk_limit_h_ = desk_limit_high;
-    desk_limit_l_ = desk_limit_low;
+    desk_limit_high_ = desk_limit_high;
+    desk_limit_low_  = desk_limit_low;
 }
 
 /* wheel */
@@ -126,7 +126,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     } else {
         bucket_arm_hight_ += 0;
     }
-    bucket_arm_hight_         = std::clamp(bucket_arm_hight_, bucket_limit_l_, bucket_limit_h_);
+    bucket_arm_hight_ = std::clamp(bucket_arm_hight_, bucket_limit_low_, bucket_limit_high_);
     command_.bucket_arm_hight = bucket_arm_hight_;
 
     // ハンド機構
@@ -145,7 +145,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     } else {
         desk_pos_ -= desk_move_value_;
     }
-    desk_pos_             = std::clamp(desk_pos_, desk_limit_l_, desk_limit_h_);
+    desk_pos_             = std::clamp(desk_pos_, desk_limit_low_, desk_limit_high_);
     command_.desk_arm_pos = desk_pos_;
 
     // アーム曲げ
@@ -166,7 +166,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
             break;
 
         case robot_config::LeverPosition::RIGHT_DEEP:
-            belt_vel_ -= belt_change_value_d_;
+            belt_vel_ -= belt_change_value_deep_;
             break;
 
         case robot_config::LeverPosition::LEFT:
@@ -174,7 +174,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
             break;
 
         case robot_config::LeverPosition::LEFT_DEEP:
-            belt_vel_ += belt_change_value_d_;
+            belt_vel_ += belt_change_value_deep_;
             break;
 
         case robot_config::LeverPosition::PUSH:
