@@ -42,7 +42,12 @@ bool CANDriver::send(const CANFrame& frame)
     tx_header.TxEventFifoControl  = FDCAN_NO_TX_EVENTS;
     tx_header.MessageMarker       = 0;
 
-    while (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan_) == 0);
+    uint32_t start_tick = HAL_GetTick();
+    while (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan_) == 0) {
+        if (HAL_GetTick() - start_tick > TX_FIFO_TIMEOUT) {
+            return false;
+        }
+    }
 
     if (HAL_FDCAN_AddMessageToTxFifoQ(
             hfdcan_, &tx_header, const_cast<uint8_t*>(frame.data.data())

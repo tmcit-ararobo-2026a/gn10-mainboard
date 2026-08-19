@@ -29,6 +29,7 @@ private:
     uint32_t convert_dlc_to_bytes(uint32_t dlc);
     uint32_t convert_bytes_to_dlc(uint32_t bytes);
     FDCAN_HandleTypeDef* hfdcan_;
+    const uint32_t TX_FIFO_TIMEOUT = 2;  // 送信FIFOが空くまで待つ際のタイムアウト
 };
 }  // namespace drivers
 }  // namespace gn10_can

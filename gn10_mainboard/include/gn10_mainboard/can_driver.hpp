@@ -27,6 +27,7 @@ public:
 
 private:
     FDCAN_HandleTypeDef* hfdcan_;
+    const uint32_t TX_FIFO_TIMEOUT = 2;  // 送信FIFOが空くまで待つ際のタイムアウト
 };
 }  // namespace drivers
 }  // namespace gn10_can
