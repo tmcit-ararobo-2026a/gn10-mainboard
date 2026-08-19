@@ -1,117 +1,78 @@
 #include "gn10_mainboard/conversion_command.hpp"
 
 #include <algorithm>
+#include <cstdint>
 
-ConversionCommand::ConversionCommand(int8_t stick_max_value_high, int8_t stick_max_value_low)
-    : stick_max_value_high_(stick_max_value_high), stick_max_value_low_(stick_max_value_low)
-{
-}
+ConversionCommand::ConversionCommand() {}
 
 /* belt */
-void ConversionCommand::set_belt_change_value(const uint8_t change_value)
+void ConversionCommand::set_belt_vel_init(float belt_vel_init)
 {
-    belt_change_value_ = change_value;
+    belt_vel_      = belt_vel_init;
+    belt_vel_init_ = belt_vel_init;
 }
 
-void ConversionCommand::set_belt_change_value_deep(const uint8_t change_value_d)
+void ConversionCommand::set_belt_vel_adjust_value(float belt_vel_adjust_value)
 {
-    belt_change_value_deep_ = change_value_d;
+    belt_vel_adjust_value_ = belt_vel_adjust_value;
 }
 
-void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
+void ConversionCommand::set_lever_degree_ofattenuation(float lever_degree_ofattenuation)
 {
-    belt_vel_      = belt_init_vel;
-    belt_init_vel_ = belt_init_vel;
+    lever_degree_ofattenuation_ = lever_degree_ofattenuation;
 }
 
 /* bucket */
-void ConversionCommand::set_bucket_move_value(const uint8_t bucket_move_value)
+void ConversionCommand::set_bucket_hight_value(uint8_t bucket_hight_value)
 {
-    bucket_hight_value_ = bucket_move_value;
+    bucket_hight_value_ = bucket_hight_value;
 }
 
-void ConversionCommand::set_bucket_limit_value(
-    const int16_t bucket_limit_high, const int16_t bucket_limit_low
-)
+void ConversionCommand::set_bucket_limit_value(int16_t bucket_limit_high, int16_t bucket_limit_low)
 {
     bucket_limit_high_ = bucket_limit_high;
     bucket_limit_low_  = bucket_limit_low;
 }
 
 /* desk */
-void ConversionCommand::set_desk_move_value(const uint8_t desk_distance)
+void ConversionCommand::set_desk_move_value(uint8_t desk_distance)
 {
-    desk_move_value_ = desk_distance;
+    desk_draw_in_value_ = desk_distance;
 }
 
-void ConversionCommand::set_desk_limit_value(
-    const int16_t desk_limit_high, const int16_t desk_limit_low
-)
+void ConversionCommand::set_desk_limit_value(int16_t desk_limit_high, int16_t desk_limit_low)
 {
     desk_limit_high_ = desk_limit_high;
     desk_limit_low_  = desk_limit_low;
 }
 
 /* wheel */
-void ConversionCommand::set_wheel_max_vel(const float max_wheel_vel)
+void ConversionCommand::set_wheel_max_vel(float wheel_max_vel)
 {
-    max_wheel_vel_ = max_wheel_vel;
+    wheel_max_vel_ = wheel_max_vel;
 }
 
-void ConversionCommand::set_max_angular_vel(const float max_angular_vel)
+void ConversionCommand::set_angular_max_vel(float angular_max_vel)
 {
-    max_angular_vel_ = max_angular_vel;
+    angular_max_vel_ = angular_max_vel;
 }
 
 /* wheel */
 robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& teleop)
 {
     // 足回り
-    int8_t x_vel;
-    int8_t y_vel;
-    int8_t angular_vel;
+    float x_vel;
+    float y_vel;
+    float angular_vel;
 
     // x velocity
-
-    if (teleop.analog.stick_left[0] > 0) {
-        x_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_left[0]) / stick_max_value_high_ * max_wheel_vel_
-        );
-    } else if (teleop.analog.stick_left[0] < 0) {
-        x_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_left[0]) / stick_max_value_low_ * max_wheel_vel_
-        );
-    } else {
-        x_vel = 0;
-    }
+    x_vel = static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX * wheel_max_vel_;
 
     // y velocity
-    if (teleop.analog.stick_left[1] > 0) {
-        y_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_left[1]) / stick_max_value_high_ * max_wheel_vel_
-        );
-    } else if (teleop.analog.stick_left[1] < 0) {
-        y_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_left[1]) / stick_max_value_low_ * max_wheel_vel_
-        );
-    } else {
-        y_vel = 0;
-    }
+    y_vel = static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX * wheel_max_vel_;
 
     // angular velocity
-    if (teleop.analog.stick_right[0] > 0) {
-        angular_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_right[0]) / stick_max_value_high_ *
-            max_angular_vel_
-        );
-    } else if (teleop.analog.stick_right[0] < 0) {
-        angular_vel = static_cast<int8_t>(
-            static_cast<float>(teleop.analog.stick_right[0]) / stick_max_value_low_ *
-            max_angular_vel_
-        );
-    } else {
-        angular_vel = 0;
-    }
+    angular_vel = static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX * angular_max_vel_;
 
     command_.x_vel       = x_vel;
     command_.y_vel       = y_vel;
@@ -141,9 +102,9 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     }
 
     if (desk_flag) {
-        desk_pos_ += desk_move_value_;
+        desk_pos_ += desk_draw_in_value_;
     } else {
-        desk_pos_ -= desk_move_value_;
+        desk_pos_ -= desk_draw_in_value_;
     }
     desk_pos_             = std::clamp(desk_pos_, desk_limit_low_, desk_limit_high_);
     command_.desk_arm_pos = desk_pos_;
@@ -162,23 +123,23 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
             break;
 
         case robot_config::LeverPosition::RIGHT:
-            belt_vel_ -= belt_change_value_;
+            belt_vel_ -= belt_vel_adjust_value_ * lever_degree_ofattenuation_;
             break;
 
         case robot_config::LeverPosition::RIGHT_DEEP:
-            belt_vel_ -= belt_change_value_deep_;
+            belt_vel_ -= belt_vel_adjust_value_;
             break;
 
         case robot_config::LeverPosition::LEFT:
-            belt_vel_ += belt_change_value_;
+            belt_vel_ += belt_vel_adjust_value_ * lever_degree_ofattenuation_;
             break;
 
         case robot_config::LeverPosition::LEFT_DEEP:
-            belt_vel_ += belt_change_value_deep_;
+            belt_vel_ += belt_vel_adjust_value_;
             break;
 
         case robot_config::LeverPosition::PUSH:
-            belt_vel_ = belt_init_vel_;
+            belt_vel_ = belt_vel_init_;
             break;
         default:
             break;
