@@ -2,32 +2,12 @@
 
 #include <algorithm>
 
-ConversionCommand::ConversionCommand(
-    int16_t bucket_limit_h, int16_t bucket_limit_l, int16_t desk_limit_h, int16_t desk_limit_l
-)
-    : bucket_limit_h_(bucket_limit_h),
-      bucket_limit_l_(bucket_limit_l),
-      desk_limit_h_(desk_limit_h),
-      desk_limit_l_(desk_limit_l)
+ConversionCommand::ConversionCommand(int8_t stick_max_value_high, int8_t stick_max_value_low)
+    : stick_max_value_high_(stick_max_value_high), stick_max_value_low_(stick_max_value_low)
 {
 }
 
-void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
-{
-    belt_vel_      = belt_init_vel;
-    belt_init_vel_ = belt_init_vel;
-}
-
-void ConversionCommand::set_bucket_move_value(const uint8_t bucket_move_value)
-{
-    bucket_high_value_ = bucket_move_value;
-}
-
-void ConversionCommand::set_desk_move_value(const uint8_t desk_distance)
-{
-    desk_move_value_ = desk_distance;
-}
-
+/* belt */
 void ConversionCommand::set_belt_change_value(const uint8_t change_value)
 {
     belt_change_value_ = change_value;
@@ -38,10 +18,50 @@ void ConversionCommand::set_belt_change_value_deep(const uint8_t change_value_d)
     belt_change_value_d_ = change_value_d;
 }
 
+void ConversionCommand::set_init_belt_vel(const uint8_t belt_init_vel)
+{
+    belt_vel_      = belt_init_vel;
+    belt_init_vel_ = belt_init_vel;
+}
+
+/* bucket */
+void ConversionCommand::set_bucket_move_value(const uint8_t bucket_move_value)
+{
+    bucket_high_value_ = bucket_move_value;
+}
+
+void ConversionCommand::set_bucket_limit_value(
+    const int16_t bucket_limit_high, const int16_t bucket_limit_low
+)
+{
+    bucket_limit_h_ = bucket_limit_high;
+    bucket_limit_l_ = bucket_limit_low;
+}
+
+/* desk */
+void ConversionCommand::set_desk_move_value(const uint8_t desk_distance)
+{
+    desk_move_value_ = desk_distance;
+}
+
+void ConversionCommand::set_desk_limit_value(
+    const int16_t desk_limit_high, const int16_t desk_limit_low
+)
+{
+    desk_limit_h_ = desk_limit_high;
+    desk_limit_l_ = desk_limit_low;
+}
+
+/* wheel */
+void ConversionCommand::set_wheel_max_vel(const uint8_t max_wheel_vel)
+{
+    max_wheel_vel_ = max_wheel_vel;
+}
+
+/* wheel */
 robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& teleop)
 {
     // 足回り
-
     command_.x_vel       = teleop.analog.stick_left[0];
     command_.y_vel       = teleop.analog.stick_left[1];
     command_.angular_vel = teleop.analog.stick_right[0];
@@ -66,10 +86,10 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     /* 机上回収 */
     // 引き入れ
     if (teleop.buttons.left && !teleop_last_.buttons.left) {
-        desk_pos_m = !desk_pos_m;
+        desk_flag = !desk_flag;
     }
 
-    if (desk_pos_m) {
+    if (desk_flag) {
         desk_pos_ += desk_move_value_;
     } else {
         desk_pos_ -= desk_move_value_;

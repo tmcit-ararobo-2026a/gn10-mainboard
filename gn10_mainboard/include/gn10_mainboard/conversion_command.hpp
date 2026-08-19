@@ -3,20 +3,30 @@
 class ConversionCommand
 {
 public:
-    ConversionCommand(
-        int16_t bucket_limit_h, int16_t bucket_limit_l, int16_t desk_limit_h, int16_t desk_limit_l
-    );
+    // stickはwheel周りで使う
+    ConversionCommand(int8_t stick_max_value_high, int8_t stick_max_value_low);
 
+    /*belt関連*/
     void set_init_belt_vel(const uint8_t belt_init_vel);
-
-    void set_bucket_move_value(const uint8_t bucket_move_value);
-
-    void set_desk_move_value(const uint8_t desk_move_value);
 
     void set_belt_change_value(const uint8_t change_value);
 
     void set_belt_change_value_deep(const uint8_t change_value_d);
 
+    /*bucket関連*/
+    void set_bucket_move_value(const uint8_t bucket_move_value);
+
+    void set_bucket_limit_value(const int16_t bucket_limit_high, const int16_t bucket_limit_low);
+
+    /*desk関連*/
+    void set_desk_move_value(const uint8_t desk_move_value);
+
+    void set_desk_limit_value(const int16_t desk_limit_high, const int16_t desk_limit_low);
+
+    /*wheel関連*/
+    void set_wheel_max_vel(const uint8_t max_wheel_vel);
+
+    // 変換
     robot_config::command_t conversion(robot_config::teleop_t& teleop);
 
 private:
@@ -26,23 +36,31 @@ private:
     // エアシリンダー射出先: 0=desk_l, 1=flag, 2=desk_r
     uint8_t air_rauncher_selector_ = 1;
 
-    // constructor
-    int16_t bucket_limit_h_;
-    int16_t bucket_limit_l_;
-    int16_t desk_limit_h_;
-    int16_t desk_limit_l_;
+    /*const*/
 
-    // seter
-    uint8_t belt_vel_          = 0;
-    uint8_t belt_init_vel_     = 0;
-    uint8_t bucket_high_value_ = 0;
-    int16_t desk_move_value_;
+    // belt
+    uint8_t belt_init_vel_;
     uint8_t belt_change_value_;
     uint8_t belt_change_value_d_;
 
-    int16_t desk_pos_;
-    bool desk_pos_m = false;
+    // bucket
+    uint8_t bucket_high_value_;
+    int16_t bucket_limit_h_;
+    int16_t bucket_limit_l_;
 
-    //
+    // desk
+    int16_t desk_move_value_;
+    int16_t desk_limit_h_;
+    int16_t desk_limit_l_;
+
+    // wheel
+    uint8_t max_wheel_vel_;
+    int8_t stick_max_value_high_;
+    int8_t stick_max_value_low_;
+
+    // not const
+    uint8_t belt_vel_         = 0;
     int16_t bucket_arm_hight_ = 0;
+    int16_t desk_pos_         = 0;
+    bool desk_flag            = false;
 };
