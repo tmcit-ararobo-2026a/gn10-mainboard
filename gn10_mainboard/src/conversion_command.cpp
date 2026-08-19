@@ -62,6 +62,7 @@ void ConversionCommand::set_max_angular_vel(const float max_angular_vel)
 {
     max_angular_vel_ = max_angular_vel;
 }
+
 /* wheel */
 robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& teleop)
 {
@@ -144,7 +145,8 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     } else {
         desk_pos_ -= desk_move_value_;
     }
-    desk_pos_ = std::clamp(desk_pos_, desk_limit_l_, desk_limit_h_);
+    desk_pos_             = std::clamp(desk_pos_, desk_limit_l_, desk_limit_h_);
+    command_.desk_arm_pos = desk_pos_;
 
     // アーム曲げ
     if (teleop.buttons.cross && !teleop_last_.buttons.cross) {
