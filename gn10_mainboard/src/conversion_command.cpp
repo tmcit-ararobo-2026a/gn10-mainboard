@@ -53,18 +53,68 @@ void ConversionCommand::set_desk_limit_value(
 }
 
 /* wheel */
-void ConversionCommand::set_wheel_max_vel(const uint8_t max_wheel_vel)
+void ConversionCommand::set_wheel_max_vel(const float max_wheel_vel)
 {
     max_wheel_vel_ = max_wheel_vel;
 }
 
+void ConversionCommand::set_max_angular_vel(const float max_angular_vel)
+{
+    max_angular_vel_ = max_angular_vel;
+}
 /* wheel */
 robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& teleop)
 {
     // 足回り
-    command_.x_vel       = teleop.analog.stick_left[0];
-    command_.y_vel       = teleop.analog.stick_left[1];
-    command_.angular_vel = teleop.analog.stick_right[0];
+    int8_t x_vel;
+    int8_t y_vel;
+    int8_t angular_vel;
+
+    // x velocity
+
+    if (teleop.analog.stick_left[0] > 0) {
+        x_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_left[0]) / stick_max_value_high_ * max_wheel_vel_
+        );
+    } else if (teleop.analog.stick_left[0] < 0) {
+        x_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_left[0]) / stick_max_value_low_ * max_wheel_vel_
+        );
+    } else {
+        x_vel = 0;
+    }
+
+    // y velocity
+    if (teleop.analog.stick_left[1] > 0) {
+        y_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_left[1]) / stick_max_value_high_ * max_wheel_vel_
+        );
+    } else if (teleop.analog.stick_left[1] < 0) {
+        y_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_left[1]) / stick_max_value_low_ * max_wheel_vel_
+        );
+    } else {
+        y_vel = 0;
+    }
+
+    // angular velocity
+    if (teleop.analog.stick_right[0] > 0) {
+        angular_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_right[0]) / stick_max_value_high_ *
+            max_angular_vel_
+        );
+    } else if (teleop.analog.stick_right[0] < 0) {
+        angular_vel = static_cast<int8_t>(
+            static_cast<float>(teleop.analog.stick_right[0]) / stick_max_value_low_ *
+            max_angular_vel_
+        );
+    } else {
+        angular_vel = 0;
+    }
+
+    command_.x_vel       = x_vel;
+    command_.y_vel       = y_vel;
+    command_.angular_vel = angular_vel;
 
     /*バケツ回収*/
     // 昇降機構

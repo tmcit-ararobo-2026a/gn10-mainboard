@@ -24,7 +24,9 @@ public:
     void set_desk_limit_value(const int16_t desk_limit_high, const int16_t desk_limit_low);
 
     /*wheel関連*/
-    void set_wheel_max_vel(const uint8_t max_wheel_vel);
+    void set_wheel_max_vel(const float max_wheel_vel);
+
+    void set_max_angular_vel(const float max_angular_vel);
 
     // 変換
     robot_config::command_t conversion(robot_config::teleop_t& teleop);
@@ -54,9 +56,10 @@ private:
     int16_t desk_limit_l_;
 
     // wheel
-    uint8_t max_wheel_vel_;
-    int8_t stick_max_value_high_;
-    int8_t stick_max_value_low_;
+    float max_wheel_vel_;
+    float max_angular_vel_;
+    float stick_max_value_high_;
+    float stick_max_value_low_;
 
     // not const
     uint8_t belt_vel_         = 0;
