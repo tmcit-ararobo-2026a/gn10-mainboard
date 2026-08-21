@@ -27,6 +27,7 @@ constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
 robot_config::command_t operation;
+robot_config::teleop_t controller;
 float vesc_velocities_feedbacks[4];
 
 /**
@@ -74,6 +75,7 @@ float vesc_vel       = 0.0f;
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // Controller conversion
+ConversionCommand conversion;
 }  // namespace
 
 /**
@@ -111,6 +113,20 @@ void setup()
 
     // Initialize Ethernet
     ether.init();
+
+    // controller command setup
+    conversion.set_belt_vel_init(0.3f);
+    conversion.set_belt_vel_adjust_value(0.1f);
+    conversion.set_lever_degree_ofattenuation(0.5f);
+
+    conversion.set_bucket_hight_value(10);
+    conversion.set_bucket_limit_value(0, 110);
+
+    conversion.set_desk_move_value(5);
+    conversion.set_desk_limit_value(0, 30);
+
+    conversion.set_wheel_max_vel(3.0f);
+    conversion.set_angular_max_vel(3.0f);
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
