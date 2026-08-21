@@ -13,6 +13,7 @@
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
+#include "gn10_mainboard/conversion_command.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
 #include "gn10_mainboard/robot_ethernet.hpp"
 #include "gn10_mainboard/serial_printf.hpp"
@@ -63,7 +64,6 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
-gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
 
 // Ethernet
 RobotEthernet ether;
@@ -73,7 +73,7 @@ float vesc_vel       = 0.0f;
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
-
+// Controller conversion
 }  // namespace
 
 /**
@@ -107,8 +107,6 @@ void setup()
         esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
         esc_arm.set_init(i, motor_config_arm);
         esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
-        desk_arm.set_init(i, motor_config_arm);
-        desk_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
     }
 
     // Initialize Ethernet
@@ -188,8 +186,7 @@ void loop()
         debug_data.jetson_restart = false;
         ether.send_pc_debug_data(debug_data);
     }
-    float desk_arm_velocities[4];
-    desk_arm.set_angular_velocities(desk_arm_velocities);
+
     // Basic System Process
     update_heartbeat_led();
     HAL_Delay(1);
