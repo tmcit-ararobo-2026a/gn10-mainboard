@@ -67,6 +67,7 @@ gn10_can::devices::ESCHubClient desk_arm(fdcan3_bus, 3);
 
 // Ethernet
 RobotEthernet ether;
+robot_config::debug_pc_t prev_debug_pc = {};
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
@@ -175,64 +176,22 @@ void loop()
     esc_arm.set_angular_velocities(arm_velocities);
 
     // ボタンが押されたら送る処理
-    // ボタン1が押されたときの処理
-    static GPIO_PinState prev_state1 = GPIO_PIN_RESET;
-    GPIO_PinState current_state1 =
-        HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin);
-    if (prev_state1 == GPIO_PIN_RESET && current_state1 == GPIO_PIN_SET) {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_restart = true;
-        ether.send_pc_debug_data(debug_data);
-    } else if (prev_state1 == GPIO_PIN_SET && current_state1 == GPIO_PIN_RESET) {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_restart = false;
-        ether.send_pc_debug_data(debug_data);
+    robot_config::debug_pc_t current_debug_pc = {};
+    current_debug_pc.jetson_restart =
+        (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET);
+    current_debug_pc.jetson_shutdown =
+        (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
+    current_debug_pc.node_start =
+        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin == GPIO_PIN_SET));
+    current_debug_pc.node_stop =
+        (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
+    if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
+        current_debug_pc.jetson_shutdown != prev_debug_pc.jetson_shutdown ||
+        current_debug_pc.node_start != prev_debug_pc.node_start ||
+        current_debug_pc.node_stop != prev_debug_pc.node_stop) {
+        ether.send_pc_debug_data(current_debug_pc);
+        prev_debug_pc = current_debug_pc;
     }
-    prev_state1 = current_state1;
-    // ボタン2が押されたときの処理
-    static GPIO_PinState prev_state2 = GPIO_PIN_RESET;
-    GPIO_PinState current_state2 =
-        HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin);
-    if (prev_state2 == GPIO_PIN_RESET && current_state2 == GPIO_PIN_SET) {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_shutdown = true;
-        ether.send_pc_debug_data(debug_data);
-    } else if (prev_state2 == GPIO_PIN_SET && current_state2 == GPIO_PIN_RESET) {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_shutdown = false;
-        ether.send_pc_debug_data(debug_data);
-    }
-    prev_state2 = current_state2;
-    // ボタン3が押されたときの処理
-    static GPIO_PinState prev_state3 = GPIO_PIN_RESET;
-    GPIO_PinState current_state3 =
-        HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin);
-    static bool jetson_use_flag = false;
-    if (prev_state3 == GPIO_PIN_RESET && current_state3 == GPIO_PIN_SET) {
-        jetson_use_flag = !jetson_use_flag;
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_use = jetson_use_flag;
-        ether.send_pc_debug_data(debug_data);
-    }
-    prev_state3 = current_state3;
-
-    // ボタン4が押されたときの処理
-    static GPIO_PinState prev_state4 = GPIO_PIN_RESET;
-    GPIO_PinState current_state4 =
-        HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin);
-    static bool ros2_node_flag = false;
-    if (prev_state4 == GPIO_PIN_RESET && current_state4 == GPIO_PIN_SET) {
-        ros2_node_flag = !ros2_node_flag;
-        robot_config::debug_pc_t debug_data;
-        debug_data.ros2_node = ros2_node_flag;
-        ether.send_pc_debug_data(debug_data);
-    }
-    prev_state4 = current_state4;
-
     float desk_arm_velocities[4];
     desk_arm.set_angular_velocities(desk_arm_velocities);
     // Basic System Process
