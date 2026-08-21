@@ -87,8 +87,6 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
         bucket_arm_hight_ += bucket_hight_value_;
     } else if (teleop.buttons.down) {
         bucket_arm_hight_ -= bucket_hight_value_;
-    } else {
-        bucket_arm_hight_ += 0;
     }
     bucket_arm_hight_ = std::clamp(bucket_arm_hight_, bucket_limit_low_, bucket_limit_high_);
     command_.bucket_arm_hight = bucket_arm_hight_;
