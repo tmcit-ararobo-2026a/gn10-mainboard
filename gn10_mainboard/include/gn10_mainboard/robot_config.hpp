@@ -163,6 +163,9 @@ static_assert(sizeof(teleop_t) == 8);
 struct debug_pc_t {
     uint8_t header;  // ヘッダー
     bool jetson_restart;
+    bool jetson_shutdown;
+    bool node_start;
+    bool node_stop;
 } __attribute__((__packed__));
 
 union debug_pc_u {

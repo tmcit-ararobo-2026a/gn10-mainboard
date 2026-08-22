@@ -68,6 +68,7 @@ gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
 
 // Ethernet
 RobotEthernet ether;
+robot_config::debug_pc_t prev_debug_pc = {};
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
@@ -189,18 +190,21 @@ void loop()
     esc_arm.set_angular_velocities(arm_velocities);
 
     // ボタンが押されたら送る処理
-
-    if (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET) {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_restart = true;
-        ether.send_pc_debug_data(debug_data);
-
-    } else {
-        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-        robot_config::debug_pc_t debug_data;
-        debug_data.jetson_restart = false;
-        ether.send_pc_debug_data(debug_data);
+    robot_config::debug_pc_t current_debug_pc = {};
+    current_debug_pc.jetson_restart =
+        (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET);
+    current_debug_pc.jetson_shutdown =
+        (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
+    current_debug_pc.node_start =
+        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin == GPIO_PIN_SET));
+    current_debug_pc.node_stop =
+        (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
+    if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
+        current_debug_pc.jetson_shutdown != prev_debug_pc.jetson_shutdown ||
+        current_debug_pc.node_start != prev_debug_pc.node_start ||
+        current_debug_pc.node_stop != prev_debug_pc.node_stop) {
+        ether.send_pc_debug_data(current_debug_pc);
+        prev_debug_pc = current_debug_pc;
     }
 
     // Basic System Process
