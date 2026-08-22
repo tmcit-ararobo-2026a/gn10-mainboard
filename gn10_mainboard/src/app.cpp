@@ -26,7 +26,6 @@ constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
-robot_config::command_t operation;
 float vesc_velocities_feedbacks[4];
 
 /**
@@ -75,6 +74,46 @@ float vesc_vel       = 0.0f;
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // Controller conversion
+ConversionCommand conversion;
+
+void command_robot_drivers(const robot_config::command_t& command)
+{
+    // Set speed to ESC Hub for wheels
+    omni.convert(command.x_vel, command.y_vel, command.angular_vel, 0.0f);
+    float front, right, left;
+    omni.getWheelAngularVelocity(&front, &left, &right);
+    float wheel_angular_velocites[4];
+    wheel_angular_velocites[0] = front * M3508_GEAR_RATIO;
+    wheel_angular_velocites[1] = left * M3508_GEAR_RATIO;
+    wheel_angular_velocites[2] = right * M3508_GEAR_RATIO;
+    wheel_angular_velocites[3] = 0.0f;
+    esc_wheel.set_angular_velocities(wheel_angular_velocites);
+
+    // Control the belt-type injection
+    if (command.belt_init) {
+        initilized_belt = true;
+        vesc_hub.set_init(0, motor_config_belt);
+    }
+
+    if (command.belt_throw && initilized_belt) {
+        vesc_vel = (float)command.belt_vel;
+    } else {
+        vesc_vel = 0.0f;
+    }
+
+    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
+    vesc_hub.set_angular_velocities(vesc_velocities);
+    // Control the air-type injection
+    std::array<bool, 8> targets{};
+    targets[0] = command.air_rauncher_for_flag;
+    targets[1] = command.air_rauncher_for_desk_r;
+    targets[2] = command.air_rauncher_for_desk_l;
+    solenoid.set_target(targets);
+
+    // Control the arm with C610
+    float arm_velocities[4];
+    esc_arm.set_angular_velocities(arm_velocities);
+}
 }  // namespace
 
 /**
@@ -113,6 +152,20 @@ void setup()
     // Initialize Ethernet
     ether.init();
 
+    // controller command setup
+    conversion.set_belt_vel_init(0.3f);
+    conversion.set_belt_vel_adjust_value(0.1f);
+    conversion.set_lever_degree_ofattenuation(0.5f);
+
+    conversion.set_bucket_hight_value(10);
+    conversion.set_bucket_limit_value(0, 110);
+
+    conversion.set_desk_move_value(5);
+    conversion.set_desk_limit_value(0, 30);
+
+    conversion.set_wheel_max_vel(3.0f);
+    conversion.set_angular_max_vel(3.0f);
+
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
@@ -122,37 +175,13 @@ void setup()
  */
 void loop()
 {
-    // Get latest command from the Jetson
-    if (robot_control_hub.get_command(operation)) {
-        // ether.receive_operation_data(operation);
+    // Get latest teleop
+    robot_config::teleop_t teleop;
+    if (ether.receive_teleop(teleop)) {
+        robot_config::command_t command;
+        command = conversion.conversion(teleop);
+        command_robot_drivers(command);
     }
-
-    // Set speed to ESC Hub for wheels
-    omni.convert(operation.x_vel, operation.y_vel, operation.angular_vel, 0.0f);
-    float front, right, left;
-    omni.getWheelAngularVelocity(&front, &left, &right);
-    float wheel_angular_velocites[4];
-    wheel_angular_velocites[0] = front * M3508_GEAR_RATIO;
-    wheel_angular_velocites[1] = left * M3508_GEAR_RATIO;
-    wheel_angular_velocites[2] = right * M3508_GEAR_RATIO;
-    wheel_angular_velocites[3] = 0.0f;
-    esc_wheel.set_angular_velocities(wheel_angular_velocites);
-
-    // Control the belt-type injection
-    if (operation.belt_init) {
-        initilized_belt = true;
-        vesc_hub.set_init(0, motor_config_belt);
-    }
-
-    if (operation.belt_throw && initilized_belt) {
-        vesc_vel = (float)operation.belt_vel;
-    } else {
-        vesc_vel = 0.0f;
-    }
-
-    float vesc_velocities[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
-    vesc_hub.set_angular_velocities(vesc_velocities);
-
     // Get latest belt angular velocity
     if (vesc_hub.get_angular_velocity_feedbacks(vesc_velocities_feedbacks)) {
         serial_printf("1:%f\n", vesc_velocities_feedbacks[0]);
@@ -161,18 +190,6 @@ void loop()
         serial_printf("4:%f\n", vesc_velocities_feedbacks[3]);
         serial_printf("\n");
     }
-
-    // Control the air-type injection
-    std::array<bool, 8> targets{};
-    targets[0] = operation.air_rauncher_for_flag;
-    targets[1] = operation.air_rauncher_for_desk_r;
-    targets[2] = operation.air_rauncher_for_desk_l;
-    solenoid.set_target(targets);
-
-    // Control the arm with C610
-    float arm_velocities[4];
-    esc_arm.set_angular_velocities(arm_velocities);
-
     // ボタンが押されたら送る処理
     robot_config::debug_pc_t current_debug_pc = {};
     current_debug_pc.jetson_restart =
