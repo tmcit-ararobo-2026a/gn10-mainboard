@@ -144,3 +144,27 @@ bool RobotEthernet::send_pc_debug_data(const robot_config::debug_pc_t& data)
     if (len != sizeof(robot_config::debug_pc_u)) return false;
     return true;
 }
+
+bool RobotEthernet::receive_main_debug(robot_config::debug_main_t& data)
+{
+    robot_config::debug_main_u rx_data;
+    uint8_t source_address[4];
+    uint16_t source_port;
+
+    int32_t ret = recvfrom(
+        socket_debug_,
+        rx_data.binary,
+        sizeof(robot_config::debug_main_u),
+        source_address,
+        &source_port
+    );
+    // データ整合性チェック
+    if (ret != sizeof(robot_config::debug_main_u)) return false;
+    if (rx_data.value.header != robot_config::header::main_debug) return false;
+    // 送信元チェック
+    if (std::memcmp(source_address, robot_config::ip::pc_robot, 4) != 0) return false;
+    if (source_port != robot_config::port::debug) return false;
+
+    data = rx_data.value;
+    return true;
+}
