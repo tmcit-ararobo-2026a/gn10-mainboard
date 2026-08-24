@@ -113,6 +113,21 @@ void command_robot_drivers(const robot_config::command_t& command)
     // Control the arm with C610
     float arm_velocities[4];
     esc_arm.set_angular_velocities(arm_velocities);
+
+    serial_printf(
+        "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
+        wheel_angular_velocites[0],
+        wheel_angular_velocites[1],
+        wheel_angular_velocites[2],
+        vesc_velocities[0],
+        targets[0],
+        targets[1],
+        targets[2],
+        arm_velocities[0],
+        arm_velocities[1],
+        arm_velocities[2],
+        arm_velocities[3]
+    );
 }
 }  // namespace
 
