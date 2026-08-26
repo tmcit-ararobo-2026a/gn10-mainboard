@@ -174,8 +174,10 @@ void setup()
     // Motor configuration
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
+    motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_arm.set_max_duty_ratio(0.5f);
     motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
+    motor_config_arm.set_encoder_type(gn10_can::devices::EncoderType::None);
 
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
@@ -185,7 +187,7 @@ void setup()
     HAL_Delay(1000);
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
-        esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+        esc_wheel.set_gains(i, 0.09f, 0.05f, 0.001f, 0.0f);
     }
 
     for (uint8_t i = 0; i < 3; i++) {
