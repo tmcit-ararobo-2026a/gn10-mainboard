@@ -58,7 +58,6 @@ gn10_can::CANBus can1_bus(can1_driver);
 gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
 gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
-gn10_can::devices::MotorDriverClient motor_collect(can1_bus, 0);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
 gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
     robot_control_hub(fdcan2_bus, 0);
