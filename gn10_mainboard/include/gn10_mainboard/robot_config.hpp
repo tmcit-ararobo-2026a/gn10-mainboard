@@ -57,7 +57,7 @@ struct command_t {
     float angular_vel;  //[rad/s]
     // バケツ用アーム 2byte
     uint8_t bucket_arm_hight;  //[cm]
-    uint8_t bucket_arm_hold;
+    bool bucket_arm_hold;
     // ベルト直動 6byte
     float belt_vel;  //[m/s]
     bool belt_throw;

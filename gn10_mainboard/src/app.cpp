@@ -42,7 +42,6 @@ void update_heartbeat_led()
 
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
-gn10_can::devices::MotorConfig motor_config_collect;
 gn10_can::devices::MotorConfig motor_config_wheel;
 gn10_can::devices::MotorConfig motor_config_arm;
 gn10_can::devices::MotorConfig motor_config_belt;
@@ -96,7 +95,7 @@ void command_robot_drivers(const robot_config::command_t& command)
     }
 
     if (command.belt_throw && initilized_belt) {
-        vesc_vel = (float)command.belt_vel;
+        vesc_vel = command.belt_vel;
     } else {
         vesc_vel = 0.0f;
     }
@@ -112,6 +111,8 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // Control the arm with C610
     float arm_velocities[4];
+    arm_velocities[0] = command.bucket_arm_hight;
+    arm_velocities[1] = (float)command.bucket_arm_hold;  // bool
     esc_arm.set_angular_velocities(arm_velocities);
 
     serial_printf(
@@ -142,9 +143,6 @@ void setup()
     fdcan3_driver.init();
 
     // Motor configuration
-    motor_config_collect.set_accel_ratio(1.0f);
-    motor_config_collect.set_max_duty_ratio(1.0f);
-
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_arm.set_max_duty_ratio(0.5f);
@@ -153,7 +151,6 @@ void setup()
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
     // Initialize devices on the network
-    motor_collect.set_init(motor_config_collect);
     solenoid.set_init();
     power_manager.set_init(power_manager_config);
     HAL_Delay(1000);
