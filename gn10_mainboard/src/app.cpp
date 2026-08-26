@@ -97,29 +97,6 @@ void command_robot_drivers(const robot_config::command_t& command)
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
 
-    // dead zone
-    if (front > deadzone) {
-        front -= deadzone;
-    } else if (front < -deadzone) {
-        front += deadzone;
-    } else {
-        front = 0.0f;
-    }
-    if (left > deadzone) {
-        left -= deadzone;
-    } else if (left < -deadzone) {
-        left += deadzone;
-    } else {
-        left = 0.0f;
-    }
-    if (right > deadzone) {
-        right -= deadzone;
-    } else if (right < -deadzone) {
-        right += deadzone;
-    } else {
-        right = 0.0f;
-    }
-
     float wheel_target[4];
     wheel_target[0] = front * M3508_GEAR_RATIO;
     wheel_target[1] = left * M3508_GEAR_RATIO;
