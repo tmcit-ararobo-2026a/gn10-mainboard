@@ -132,13 +132,13 @@ struct teleop_t {
         LeverPosition lever_left  : 3;
         uint8_t stick_push_right  : 1;
         uint8_t stick_push_left   : 1;
-        uint8_t up                : 1;
-        uint8_t down              : 1;
-        uint8_t right             : 1;
-        uint8_t left              : 1;
-        uint8_t circle            : 1;
-        uint8_t cross             : 1;
-        uint8_t triangle          : 1;
+        uint8_t left_up           : 1;
+        uint8_t left_down         : 1;
+        uint8_t left_right        : 1;
+        uint8_t left_left         : 1;
+        uint8_t right_up          : 1;
+        uint8_t right_down        : 1;
+        uint8_t right_right       : 1;
         uint8_t reserved          : 1;
     } __attribute__((__packed__)) buttons;  // 2byte
 
