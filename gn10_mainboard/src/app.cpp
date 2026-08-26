@@ -24,6 +24,7 @@ namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
 constexpr float k_loading_count_tolerance         = 1.2f;  // 許容誤差
+constexpr float deadzone                          = 10.0f;
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
@@ -95,6 +96,30 @@ void command_robot_drivers(const robot_config::command_t& command)
     omni.convert(command.x_vel, command.y_vel, command.angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
+
+    // dead zone
+    if (front > deadzone) {
+        front -= deadzone;
+    } else if (front < -deadzone) {
+        front += deadzone;
+    } else {
+        front = 0.0f;
+    }
+    if (left > deadzone) {
+        left -= deadzone;
+    } else if (left < -deadzone) {
+        left += deadzone;
+    } else {
+        left = 0.0f;
+    }
+    if (right > deadzone) {
+        right -= deadzone;
+    } else if (right < -deadzone) {
+        right += deadzone;
+    } else {
+        right = 0.0f;
+    }
+
     float wheel_target[4];
     wheel_target[0] = front * M3508_GEAR_RATIO;
     wheel_target[1] = left * M3508_GEAR_RATIO;
