@@ -170,13 +170,9 @@ void setup()
     // controller command setup
     conversion.set_belt_vel_init(0.3f);
     conversion.set_belt_vel_adjust_value(0.1f);
-    conversion.set_lever_degree_ofattenuation(0.5f);
 
     conversion.set_bucket_hight_value(10);
     conversion.set_bucket_limit_value(0, 110);
-
-    conversion.set_desk_move_value(5);
-    conversion.set_desk_limit_value(0, 30);
 
     conversion.set_wheel_max_vel(3.0f);
     conversion.set_angular_max_vel(3.0f);

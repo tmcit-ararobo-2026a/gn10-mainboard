@@ -58,9 +58,6 @@ struct command_t {
     // バケツ用アーム 2byte
     uint8_t bucket_arm_hight;  //[cm]
     uint8_t bucket_arm_hold;
-    // 装填機構 2byte
-    uint8_t loading_hook_phase;  //[phase]
-    bool loading_shift_cloth;
     // ベルト直動 6byte
     float belt_vel;  //[m/s]
     bool belt_throw;
@@ -69,14 +66,8 @@ struct command_t {
     bool air_rauncher_for_flag;
     bool air_rauncher_for_desk_r;
     bool air_rauncher_for_desk_l;
-    // 机上雑巾回収 2byte
-    uint8_t desk_arm_pos;  //[cm]
-    bool desk_arm_hold;
-    // 状態表示 2byte
-    int8_t target_bucket_angle_roll;
-    int8_t target_bucket_angle_pitch;
     // 予備 2byte
-    uint8_t reserved[2];
+    uint8_t reserved[8];
 } __attribute__((__packed__));
 
 union command_u {
