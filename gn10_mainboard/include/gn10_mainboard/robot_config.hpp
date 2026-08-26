@@ -66,8 +66,10 @@ struct command_t {
     bool air_rauncher_for_flag;
     bool air_rauncher_for_desk_r;
     bool air_rauncher_for_desk_l;
-    // 予備 2byte
-    uint8_t reserved[8];
+    // 装填処理 1byte
+    bool loading;
+    // 予備 7byte
+    uint8_t reserved[7];
 } __attribute__((__packed__));
 
 union command_u {

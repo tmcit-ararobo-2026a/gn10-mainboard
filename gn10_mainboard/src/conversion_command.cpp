@@ -65,39 +65,12 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.angular_vel = angular_vel;
 
     /*バケツ回収*/
-    switch (teleop.buttons.lever_right) {
-        case robot_config::LeverPosition::FRONT:
-            break;
-        case robot_config::LeverPosition::RIGHT:
-            break;
-        case robot_config::LeverPosition::RIGHT_DEEP:
-            break;
-        case robot_config::LeverPosition::LEFT:
-            break;
-        case robot_config::LeverPosition::LEFT_DEEP:
-            break;
-        case robot_config::LeverPosition::PUSH:
-            bucket_arm_hight_ += bucket_hight_value_;
-            break;
-        default:
-            break;
+    if (teleop.buttons.lever_right == robot_config::LeverPosition::PUSH) {
+        bucket_arm_hight_ += bucket_hight_value_;
     }
 
-    switch (teleop.buttons.lever_left) {
-        case robot_config::LeverPosition::RIGHT:
-            break;
-        case robot_config::LeverPosition::RIGHT_DEEP:
-            break;
-        case robot_config::LeverPosition::LEFT:
-            break;
-        case robot_config::LeverPosition::LEFT_DEEP:
-            break;
-        case robot_config::LeverPosition::PUSH:
-            bucket_arm_hight_ -= bucket_hight_value_;
-            break;
-
-        default:
-            break;
+    if (teleop.buttons.lever_left == robot_config::LeverPosition::PUSH) {
+        bucket_arm_hight_ -= bucket_hight_value_;
     }
 
     bucket_arm_hight_ = std::clamp(bucket_arm_hight_, bucket_limit_low_, bucket_limit_high_);
@@ -141,6 +114,15 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
         command_.air_rauncher_for_desk_r = false;
         command_.air_rauncher_for_flag   = true;
         command_.air_rauncher_for_desk_l = false;
+    }
+
+    /*装填機構*/
+    // もし自動で装填されなかったら手動で装填
+    if (teleop.buttons.lever_right == robot_config::LeverPosition::PUSH &&
+        teleop.buttons.lever_left == robot_config::LeverPosition::PUSH) {
+        command_.loading = true;
+    } else {
+        command_.loading = false;
     }
 
     teleop_last_ = teleop;
