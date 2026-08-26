@@ -23,6 +23,7 @@
 namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
+constexpr float k_loading_count_tolerance         = 1.2f;  // 許容誤差
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
@@ -75,11 +76,13 @@ bool initilized_belt = false;
 float vesc_vel       = 0.0f;
 
 // loading
-bool start_encoder      = false;
-bool last_start_encoder = false;
-bool loading            = true;
-bool loading_check      = false;  // もし自動で装填されなかったら手動で装填する
-float loading_target    = 0.0f;
+bool start_encoder        = false;
+bool last_start_encoder   = false;
+bool loading              = true;
+bool loading_check        = true;  // もし自動で装填されなかったら手動で装填する
+bool last_command_loading = false;
+uint8_t loading_count     = 0;
+float loading_target      = 0.0f;
 
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
@@ -130,11 +133,18 @@ void command_robot_drivers(const robot_config::command_t& command)
     if (start_encoder && loading) {
         loading_target = (float)(2 * M_PI / 3);
         loading        = false;
+        loading_count++;
     }
+
+    if (!loading_check && command.loading && !last_command_loading) {
+        loading_target = (float)(2 * M_PI / 3);
+        loading_count++;
+    }
+    last_command_loading = command.loading;
+
     arm_and_loading_target[3] = loading_target;
 
     esc_arm.set_targets(arm_and_loading_target);
-
     serial_printf(
         "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
         wheel_target[0],
@@ -224,6 +234,13 @@ void loop()
 
     if (esc_loading.get_feedbacks(loading_feedbacks)) {
         serial_printf("encoder_value:%f\n", loading_feedbacks[3]);
+        float loading_count_feedback = loading_feedbacks[3] / (float)(2 * M_PI / 3);
+
+        loading_check = true;
+
+        if (std::abs((float)loading_count - loading_count_feedback) > k_loading_count_tolerance) {
+            loading_check = false;
+        }
     }
 
     if (start_encoder && !last_start_encoder) {
@@ -234,6 +251,7 @@ void loop()
 
         esc_loading.set_init(3, motor_config_loading);
         esc_loading.set_gains(3, 0.05f, 0.0f, 0.0f, 0.0f);
+        loading_check      = false;
         last_start_encoder = start_encoder;
     }
 
