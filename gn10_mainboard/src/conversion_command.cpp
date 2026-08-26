@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "gn10_mainboard/serial_printf.hpp"
+
 ConversionCommand::ConversionCommand() {}
 
 /* belt */
@@ -95,7 +97,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.belt_vel = belt_vel_;
 
     // belt_init処理
-    if (teleop.buttons.stick_push_left && teleop.buttons.stick_push_right) {
+    if (teleop.buttons.right_up && teleop.buttons.right_right) {
         command_.belt_init = true;
     } else {
         command_.belt_init = false;

@@ -129,9 +129,9 @@ struct teleop_t {
         uint8_t left_down         : 1;
         uint8_t left_right        : 1;
         uint8_t left_left         : 1;
+        uint8_t right_right       : 1;
         uint8_t right_up          : 1;
         uint8_t right_down        : 1;
-        uint8_t right_right       : 1;
         uint8_t reserved          : 1;
     } __attribute__((__packed__)) buttons;  // 2byte
 
