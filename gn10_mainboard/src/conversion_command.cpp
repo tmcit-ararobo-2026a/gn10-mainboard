@@ -97,31 +97,28 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.belt_vel = belt_vel_;
 
     // belt_init処理
-    if (teleop.buttons.right_up && teleop.buttons.right_right) {
+    if (teleop.buttons.lever_right == robot_config::LeverPosition::RIGHT_DEEP) {
         command_.belt_init = true;
     } else {
         command_.belt_init = false;
     }
 
     // エアシリンダー
+    command_.air_rauncher_for_desk_r = false;
+    command_.air_rauncher_for_flag   = false;
+    command_.air_rauncher_for_desk_l = false;
+
     if (teleop.buttons.left_right) {
         command_.air_rauncher_for_desk_r = true;
-        command_.air_rauncher_for_flag   = false;
-        command_.air_rauncher_for_desk_l = false;
     } else if (teleop.buttons.left_left) {
-        command_.air_rauncher_for_desk_r = false;
-        command_.air_rauncher_for_flag   = false;
         command_.air_rauncher_for_desk_l = true;
     } else if (teleop.buttons.left_up) {
-        command_.air_rauncher_for_desk_r = false;
-        command_.air_rauncher_for_flag   = true;
-        command_.air_rauncher_for_desk_l = false;
+        command_.air_rauncher_for_flag = true;
     }
 
     /*装填機構*/
     // もし自動で装填されなかったら手動で装填
-    if (teleop.buttons.lever_right == robot_config::LeverPosition::PUSH &&
-        teleop.buttons.lever_left == robot_config::LeverPosition::PUSH) {
+    if (teleop.buttons.lever_right == robot_config::LeverPosition::LEFT_DEEP) {
         command_.loading = true;
     } else {
         command_.loading = false;
