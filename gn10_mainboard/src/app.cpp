@@ -23,8 +23,7 @@
 namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
-constexpr float k_loading_count_tolerance         = 1.2f;  // 許容誤差
-constexpr float deadzone                          = 10.0f;
+constexpr float k_loading_angle_tolerance         = 1.2f * (2.0f * M_PI / 3.0f);
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
@@ -76,13 +75,9 @@ bool initilized_belt = false;
 float vesc_vel       = 0.0f;
 
 // loading
-bool start_encoder        = false;
-bool last_start_encoder   = false;
-bool loading              = true;
-bool loading_check        = true;  // もし自動で装填されなかったら手動で装填する
-bool last_command_loading = false;
-uint8_t loading_count     = 0;
-float loading_target      = 0.0f;
+bool start_encoder = false;
+bool loading       = true;
+bool loading_check = true;  // もし自動で装填されなかったら手動で装填する
 
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
@@ -131,12 +126,16 @@ void command_robot_drivers(const robot_config::command_t& command)
     arm_and_loading_target[1]       = (float)command.bucket_arm_hold;  // bool
 
     // Control the loadinf with C610
+    float loading_target         = 0.0f;
+    static uint8_t loading_count = 0;
+
     if (start_encoder && loading) {
         loading_count++;
         loading_target = (float)loading_count * (float)(2 * M_PI / 3);
         loading        = false;
     }
 
+    static bool last_command_loading = false;
     if (!loading_check && command.loading && !last_command_loading) {
         loading_count++;
         loading_target = (float)loading_count * (float)(2 * M_PI / 3);
@@ -234,15 +233,16 @@ void loop()
     }
 
     if (esc_loading.get_feedbacks(loading_feedbacks)) {
-        serial_printf("encoder_value:%f\n", loading_feedbacks[3]);
-        float loading_count_feedback = loading_feedbacks[3] / (float)(2 * M_PI / 3);
+        serial_printf("loading_angle :%f\n", loading_feedbacks[3]);
 
         loading_check = true;
 
-        if (std::abs((float)loading_count - loading_count_feedback) > k_loading_count_tolerance) {
+        if (loading_feedbacks[3] > k_loading_angle_tolerance) {
             loading_check = false;
         }
     }
+
+    static bool last_start_encoder = false;
 
     if (start_encoder && !last_start_encoder) {
         // 装填機構init処理
