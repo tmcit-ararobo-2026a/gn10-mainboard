@@ -131,14 +131,14 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // Control the loadinf with C610
     if (start_encoder && loading) {
-        loading_target = (float)(2 * M_PI / 3);
-        loading        = false;
         loading_count++;
+        loading_target = (float)loading_count * (float)(2 * M_PI / 3);
+        loading        = false;
     }
 
     if (!loading_check && command.loading && !last_command_loading) {
-        loading_target = (float)(2 * M_PI / 3);
         loading_count++;
+        loading_target = (float)loading_count * (float)(2 * M_PI / 3);
     }
     last_command_loading = command.loading;
 
