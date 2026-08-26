@@ -175,10 +175,8 @@ void setup()
     // Motor configuration
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
-    motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::IncrementalSpeed);
     motor_config_arm.set_max_duty_ratio(0.5f);
     motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm.set_encoder_type(gn10_can::devices::EncoderType::IncrementalSpeed);
 
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
