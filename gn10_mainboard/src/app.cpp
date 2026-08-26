@@ -78,6 +78,9 @@ float vesc_vel       = 0.0f;
 bool start_encoder      = false;
 bool last_start_encoder = false;
 bool loading            = true;
+bool loading_check      = false;  // もし自動で装填されなかったら手動で装填する
+float loading_target    = 0.0f;
+
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
@@ -119,15 +122,16 @@ void command_robot_drivers(const robot_config::command_t& command)
     solenoid.set_target(targets);
 
     // Control the arm with C610
-    float arm_and_loading_target[4];
-    arm_and_loading_target[0] = command.bucket_arm_hight;
-    arm_and_loading_target[1] = (float)command.bucket_arm_hold;  // bool
+    float arm_and_loading_target[4] = {};
+    arm_and_loading_target[0]       = command.bucket_arm_hight;        //[rad/s]
+    arm_and_loading_target[1]       = (float)command.bucket_arm_hold;  // bool
 
     // Control the loadinf with C610
     if (start_encoder && loading) {
-        arm_and_loading_target[4] = 120.0f;
-        loading                   = false;
+        loading_target = (float)(2 * M_PI / 3);
+        loading        = false;
     }
+    arm_and_loading_target[3] = loading_target;
 
     esc_arm.set_targets(arm_and_loading_target);
 
@@ -176,13 +180,12 @@ void setup()
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
     }
+
     for (uint8_t i = 0; i < 3; i++) {
         esc_arm.set_init(i, motor_config_arm);
         esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
     }
 
-    esc_loading.set_init(4, motor_config_loading);
-    esc_loading.set_gains(4, 0.05f, 0.0f, 0.0f, 0.0f);
     // Initialize Ethernet
     ether.init();
 
@@ -219,8 +222,18 @@ void loop()
         serial_printf("1:%f\n", vesc_feedbacks[0]);
     }
 
+    if (esc_loading.get_feedbacks(loading_feedbacks)) {
+        serial_printf("encoder_value:%f\n", loading_feedbacks[3]);
+    }
+
     if (start_encoder && !last_start_encoder) {
+        // 装填機構init処理
+        motor_config_loading.set_max_duty_ratio(0.5f);
+        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
         motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
+        esc_loading.set_init(3, motor_config_loading);
+        esc_loading.set_gains(3, 0.05f, 0.0f, 0.0f, 0.0f);
         last_start_encoder = start_encoder;
     }
 
