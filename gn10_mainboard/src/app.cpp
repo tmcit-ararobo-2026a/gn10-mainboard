@@ -75,9 +75,9 @@ bool initilized_belt = false;
 float vesc_vel       = 0.0f;
 
 // loading
-bool start_encoder = false;
-bool loading       = true;
-bool loading_check = true;  // もし自動で装填されなかったら手動で装填する
+bool start_encoder = false;  // encoderの測定開始を合図
+bool loading       = true;   // 装填していいのかを判別
+bool loading_check = true;   // 自動で装填されたか確認
 
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
@@ -126,8 +126,8 @@ void command_robot_drivers(const robot_config::command_t& command)
     arm_and_loading_target[1]       = (float)command.bucket_arm_hold;  // bool
 
     // Control the loadinf with C610
-    float loading_target         = 0.0f;
-    static uint8_t loading_count = 0;
+    float loading_target         = 0.0f;  // 装填機構の目標角度を入れる変数
+    static uint8_t loading_count = 0;     // 回転回数を数える変数
 
     if (start_encoder && loading) {
         loading_count++;
@@ -135,7 +135,8 @@ void command_robot_drivers(const robot_config::command_t& command)
         loading        = false;
     }
 
-    static bool last_command_loading = false;
+    static bool last_command_loading = false;  // 前回装填したか確認する変数
+
     if (!loading_check && command.loading && !last_command_loading) {
         loading_count++;
         loading_target = (float)loading_count * (float)(2 * M_PI / 3);
@@ -242,7 +243,7 @@ void loop()
         }
     }
 
-    static bool last_start_encoder = false;
+    static bool last_start_encoder = false;  // 複数回初期化防止用
 
     if (start_encoder && !last_start_encoder) {
         // 装填機構init処理
