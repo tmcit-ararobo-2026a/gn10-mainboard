@@ -65,22 +65,20 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.angular_vel = angular_vel;
 
     /*バケツ回収*/
-    if (teleop.buttons.left_down && teleop.buttons.right_up) {
-        bucket_arm_hight_ += bucket_hight_value_;
-    }
-
-    if (teleop.buttons.left_down && teleop.buttons.right_down) {
-        bucket_arm_hight_ -= bucket_hight_value_;
+    if (teleop.buttons.left_down) {
+        if (teleop.buttons.right_up) {
+            bucket_arm_hight_ += bucket_hight_value_;
+        }
+        if (teleop.buttons.right_down) {
+            bucket_arm_hight_ -= bucket_hight_value_;
+        }
+        if (teleop.buttons.right_right && !teleop_last_.buttons.right_right) {
+            command_.bucket_arm_hold = !command_.bucket_arm_hold;
+        }
     }
 
     bucket_arm_hight_ = std::clamp(bucket_arm_hight_, bucket_limit_low_, bucket_limit_high_);
     command_.bucket_arm_hight = bucket_arm_hight_;
-
-    // ハンド機構
-    if (teleop.buttons.left_down && teleop.buttons.right_right &&
-        !teleop_last_.buttons.right_right) {
-        command_.bucket_arm_hold = !command_.bucket_arm_hold;
-    }
 
     /* ベルト直動*/
     // belt_throw
@@ -107,9 +105,11 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
 
     if (teleop.buttons.left_right) {
         command_.air_rauncher_for_desk_r = true;
-    } else if (teleop.buttons.left_left) {
+    }
+    if (teleop.buttons.left_left) {
         command_.air_rauncher_for_desk_l = true;
-    } else if (teleop.buttons.left_up) {
+    }
+    if (teleop.buttons.left_up) {
         command_.air_rauncher_for_flag = true;
     }
 
