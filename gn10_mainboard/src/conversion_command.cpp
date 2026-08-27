@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "gn10_mainboard/serial_printf.hpp"
-
 ConversionCommand::ConversionCommand() {}
 
 /* belt */
@@ -97,11 +95,7 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.belt_vel = belt_vel_;
 
     // belt_init処理
-    if (teleop.buttons.lever_right == robot_config::LeverPosition::RIGHT_DEEP) {
-        command_.belt_init = true;
-    } else {
-        command_.belt_init = false;
-    }
+    command_.belt_init = teleop.buttons.stick_push_right;
 
     // エアシリンダー
     command_.air_rauncher_for_desk_r = false;
@@ -117,12 +111,13 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     }
 
     /*装填機構*/
-    // もし自動で装填されなかったら手動で装填
-    if (teleop.buttons.lever_right == robot_config::LeverPosition::LEFT_DEEP) {
+    /*
+    // もし自動で装填されなかったら手動で装填 feedbackなしなので
+    if (teleop.buttons.stick_push_left) {
         command_.loading = true;
     } else {
         command_.loading = false;
-    }
+    }*/
 
     teleop_last_ = teleop;
     return command_;

@@ -146,12 +146,13 @@ void command_robot_drivers(const robot_config::command_t& command)
     arm_and_loading_target[3] = loading_target;
 
     esc_arm.set_targets(arm_and_loading_target);
-    serial_printf(
+
+        serial_printf(
         "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
         wheel_target[0],
         wheel_target[1],
         wheel_target[2],
-        vesc_target[0],
+        command.belt_vel,
         targets[0],
         targets[1],
         targets[2],
@@ -202,7 +203,7 @@ void setup()
 
     // controller command setup
     conversion.set_belt_vel_init(0.3f);
-    conversion.set_belt_vel_adjust_value(0.1f);
+    conversion.set_belt_vel_adjust_value(0.005f);
 
     conversion.set_bucket_hight_value(10);
     conversion.set_bucket_limit_value(0, 110);
