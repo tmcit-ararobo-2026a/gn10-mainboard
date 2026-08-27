@@ -23,14 +23,11 @@
 namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
-constexpr float c610_radius                       = 0.122f;
-constexpr float k_loading_angle_tolerance         = 1.2f * (2.0f * M_PI / 3.0f);
+constexpr float c610_radius                       = 0.122f;  // 単位[cm]
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
 float vesc_feedbacks[4];
-
-float loading_feedbacks[4];
 
 /**
  * @brief Toggle heartbeat LED at a fixed interval.
@@ -65,7 +62,7 @@ gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
-gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
+gn10_can::devices::ESCHubClient esc_arm_and_loading(fdcan3_bus, 2);
 
 // Ethernet
 RobotEthernet ether;
@@ -73,11 +70,6 @@ robot_config::debug_pc_t prev_debug_pc = {};
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
-
-// loading
-bool start_encoder = false;  // encoderの測定開始を合図
-bool loading       = true;   // 装填していいのかを判別
-bool loading_check = true;   // 自動で装填されたか確認
 
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
@@ -122,42 +114,21 @@ void command_robot_drivers(const robot_config::command_t& command)
     solenoid.set_target(targets);
 
     // Control the arm with C610
-    float arm_and_loading_target[4] = {};
-    arm_and_loading_target[0]       = 0;  //[rad/s]
-    arm_and_loading_target[1]       = 0;  // bool
+    float arm_and_loading_target[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    if (teleop.buttons.left_down) {
-        if (teleop.buttons.right_right) {
-            arm_and_loading_target[0] = 3.14;
-        }
-        if (teleop.buttons.right_up) {
-            arm_and_loading_target[1] = 0.314;
-        }
-        if (teleop.buttons.right_down) {
-            arm_and_loading_target[1] = -0.314;
-        }
+    arm_and_loading_target[0] = (float)command.bucket_arm_hight * c610_radius / 0.001;  //[rad/s]
+
+    // hold
+    if (command.bucket_arm_hold == 0) {
     }
-    // Control the loadinf with C610
-    float loading_target         = 0.0f;  // 装填機構の目標角度を入れる変数
-    static uint8_t loading_count = 0;     // 回転回数を数える変数
-
-    if (start_encoder && loading) {
-        loading_count++;
-        loading_target = (float)loading_count * (float)(2 * M_PI / 3);
-        loading        = false;
+    if (command.bucket_arm_hold == 1) {
+        arm_and_loading_target[1] = M_PI / 0.001f;
+    }
+    if (command.bucket_arm_hold == 2) {
+        arm_and_loading_target[1] += M_PI / 0.001f;
     }
 
-    static bool last_command_loading = false;  // 前回装填したか確認する変数
-
-    if (!loading_check && command.loading && !last_command_loading) {
-        loading_count++;
-        loading_target = (float)loading_count * (float)(2 * M_PI / 3);
-    }
-    last_command_loading = command.loading;
-
-    arm_and_loading_target[3] = loading_target;
-
-    esc_arm.set_targets(arm_and_loading_target);
+    esc_arm_and_loading.set_targets(arm_and_loading_target);
 
     serial_printf(
         "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
@@ -206,8 +177,8 @@ void setup()
     }
 
     for (uint8_t i = 0; i < 3; i++) {
-        esc_arm.set_init(i, motor_config_arm);
-        esc_arm.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
+        esc_arm_and_loading.set_init(i, motor_config_arm);
+        esc_arm_and_loading.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
     }
 
     // Initialize Ethernet
@@ -241,33 +212,11 @@ void loop()
     }
     // Get latest belt angular velocity
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
-        start_encoder = true;
-        loading       = true;
         serial_printf("1:%f\n", vesc_feedbacks[0]);
-    }
-
-    if (esc_arm.get_feedbacks(loading_feedbacks)) {
-        serial_printf("loading_angle :%f\n", loading_feedbacks[3]);
-
-        loading_check = true;
-
-        if (loading_feedbacks[3] > k_loading_angle_tolerance) {
-            loading_check = false;
-        }
-    }
-
-    static bool last_start_encoder = false;  // 複数回初期化防止用
-
-    if (start_encoder && !last_start_encoder) {
-        // 装填機構init処理
-        motor_config_loading.set_max_duty_ratio(0.5f);
         motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
         motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-
-        esc_arm.set_init(3, motor_config_loading);
-        esc_arm.set_gains(3, 0.1f, 0.0f, 0.0f, 0.0f);
-        loading_check      = false;
-        last_start_encoder = start_encoder;
+        esc_arm_and_loading.set_init(4, motor_config_loading);
+        esc_arm_and_loading.set_gains(4, 0.1f, 0.0f, 0.0f, 0.0f);
     }
 
     // ボタンが押されたら送る処理

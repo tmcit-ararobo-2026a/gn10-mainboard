@@ -73,7 +73,11 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
             bucket_arm_hight_ -= bucket_hight_value_;
         }
         if (teleop.buttons.right_right && !teleop_last_.buttons.right_right) {
-            command_.bucket_arm_hold = !command_.bucket_arm_hold;
+            if (command_.bucket_arm_hold >= 2) {
+                command_.bucket_arm_hold = 0;
+            } else {
+                command_.bucket_arm_hold++;
+            }
         }
     }
 
