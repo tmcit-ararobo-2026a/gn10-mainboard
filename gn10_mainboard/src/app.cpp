@@ -71,6 +71,10 @@ robot_config::debug_pc_t prev_debug_pc = {};
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
 
+// loading
+float loading_count  = 0;
+bool loading_success = false;
+
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
@@ -126,6 +130,12 @@ void command_robot_drivers(const robot_config::command_t& command)
     }
     if (command.bucket_arm_hold == 2) {
         arm_and_loading_target[1] += M_PI / 0.001f;
+    }
+
+    // loading
+    if (!loading_success) {
+        arm_and_loading_target[4] = loading_count * (float)(2 * M_PI / 3);
+        loading_success           = false;
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
@@ -213,10 +223,14 @@ void loop()
     // Get latest belt angular velocity
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
         serial_printf("1:%f\n", vesc_feedbacks[0]);
-        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
-        motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-        esc_arm_and_loading.set_init(4, motor_config_loading);
-        esc_arm_and_loading.set_gains(4, 0.1f, 0.0f, 0.0f, 0.0f);
+        if (loading_count == 0) {
+            motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
+            motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+            esc_arm_and_loading.set_init(4, motor_config_loading);
+            esc_arm_and_loading.set_gains(4, 0.1f, 0.0f, 0.0f, 0.0f);
+        }
+        loading_count++;
+        loading_success = false;
     }
 
     // ボタンが押されたら送る処理
