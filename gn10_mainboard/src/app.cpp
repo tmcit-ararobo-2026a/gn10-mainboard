@@ -147,7 +147,7 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     esc_arm.set_targets(arm_and_loading_target);
 
-        serial_printf(
+    serial_printf(
         "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
         wheel_target[0],
         wheel_target[1],
@@ -205,8 +205,8 @@ void setup()
     conversion.set_belt_vel_init(0.3f);
     conversion.set_belt_vel_adjust_value(0.005f);
 
-    conversion.set_bucket_hight_value(10);
-    conversion.set_bucket_limit_value(0, 110);
+    conversion.set_bucket_hight_value(1);
+    conversion.set_bucket_limit_value(110, 0);
 
     conversion.set_wheel_max_vel(3.0f);
     conversion.set_angular_max_vel(3.0f);
@@ -222,7 +222,17 @@ void loop()
 {
     // Get latest teleop
     robot_config::teleop_t teleop;
+
     if (ether.receive_teleop(teleop)) {
+        /*
+        serial_printf(
+            "teleop raw -> stick_left:%d stic_right :%d lever_left:%d lever_right:%d\n",
+            teleop.buttons.stick_push_left,
+            teleop.buttons.stick_push_right,
+            teleop.buttons.lever_left,
+            teleop.buttons.lever_right
+            // ※フィールド名は teleop_t の定義に合わせて調整してください
+        );*/
         robot_config::command_t command;
         command = conversion.conversion(teleop);
         command_robot_drivers(command);

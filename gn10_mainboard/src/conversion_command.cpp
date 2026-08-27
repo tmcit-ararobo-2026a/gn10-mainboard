@@ -65,11 +65,11 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.angular_vel = angular_vel;
 
     /*バケツ回収*/
-    if (teleop.buttons.lever_right == robot_config::LeverPosition::PUSH) {
+    if (teleop.buttons.left_down && teleop.buttons.right_up) {
         bucket_arm_hight_ += bucket_hight_value_;
     }
 
-    if (teleop.buttons.lever_left == robot_config::LeverPosition::PUSH) {
+    if (teleop.buttons.left_down && teleop.buttons.right_down) {
         bucket_arm_hight_ -= bucket_hight_value_;
     }
 
@@ -77,7 +77,8 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.bucket_arm_hight = bucket_arm_hight_;
 
     // ハンド機構
-    if (teleop.buttons.left_down && !teleop_last_.buttons.left_down) {
+    if (teleop.buttons.left_down && teleop.buttons.right_right &&
+        !teleop_last_.buttons.right_right) {
         command_.bucket_arm_hold = !command_.bucket_arm_hold;
     }
 
@@ -86,16 +87,18 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     command_.belt_throw = teleop.buttons.right_right;
 
     // belt出力調整
-    if (teleop.buttons.right_up) {
+    if (teleop.buttons.right_up && !teleop.buttons.left_down) {
         belt_vel_ += belt_vel_adjust_value_;
-    } else if (teleop.buttons.right_down) {
+    } else if (teleop.buttons.right_down && !teleop.buttons.left_down) {
         belt_vel_ -= belt_vel_adjust_value_;
     }
     belt_vel_         = std::clamp(belt_vel_, 0.0f, 1.0f);
     command_.belt_vel = belt_vel_;
 
     // belt_init処理
-    command_.belt_init = teleop.buttons.stick_push_right;
+    if (!teleop.buttons.left_down) {
+        command_.belt_init = teleop.buttons.stick_push_right;
+    }
 
     // エアシリンダー
     command_.air_rauncher_for_desk_r = false;
