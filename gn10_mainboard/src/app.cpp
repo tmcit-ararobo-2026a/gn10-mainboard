@@ -23,6 +23,7 @@
 namespace {
 
 constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
+constexpr float c610_radius                       = 0.122f;
 constexpr float k_loading_angle_tolerance         = 1.2f * (2.0f * M_PI / 3.0f);
 
 uint32_t heartbeat_last_toggle_time_ms = 0;
@@ -65,7 +66,6 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm(fdcan3_bus, 2);
-gn10_can::devices::ESCHubClient esc_loading(fdcan3_bus, 2);
 
 // Ethernet
 RobotEthernet ether;
@@ -84,6 +84,7 @@ ThreeWheelOmni omni(0.5f, 0.1f);
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // Controller conversion
 ConversionCommand conversion;
+robot_config::teleop_t teleop;
 
 void command_robot_drivers(const robot_config::command_t& command)
 {
@@ -122,9 +123,20 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // Control the arm with C610
     float arm_and_loading_target[4] = {};
-    arm_and_loading_target[0]       = command.bucket_arm_hight;        //[rad/s]
-    arm_and_loading_target[1]       = (float)command.bucket_arm_hold;  // bool
+    arm_and_loading_target[0]       = 0;  //[rad/s]
+    arm_and_loading_target[1]       = 0;  // bool
 
+    if (teleop.buttons.left_down) {
+        if (teleop.buttons.right_right) {
+            arm_and_loading_target[0] = 3.14;
+        }
+        if (teleop.buttons.right_up) {
+            arm_and_loading_target[1] = 0.314;
+        }
+        if (teleop.buttons.right_down) {
+            arm_and_loading_target[1] = -0.314;
+        }
+    }
     // Control the loadinf with C610
     float loading_target         = 0.0f;  // 装填機構の目標角度を入れる変数
     static uint8_t loading_count = 0;     // 回転回数を数える変数
@@ -195,7 +207,7 @@ void setup()
 
     for (uint8_t i = 0; i < 3; i++) {
         esc_arm.set_init(i, motor_config_arm);
-        esc_arm.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
+        esc_arm.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
     }
 
     // Initialize Ethernet
@@ -221,18 +233,8 @@ void setup()
 void loop()
 {
     // Get latest teleop
-    robot_config::teleop_t teleop;
 
     if (ether.receive_teleop(teleop)) {
-        /*
-        serial_printf(
-            "teleop raw -> stick_left:%d stic_right :%d lever_left:%d lever_right:%d\n",
-            teleop.buttons.stick_push_left,
-            teleop.buttons.stick_push_right,
-            teleop.buttons.lever_left,
-            teleop.buttons.lever_right
-            // ※フィールド名は teleop_t の定義に合わせて調整してください
-        );*/
         robot_config::command_t command;
         command = conversion.conversion(teleop);
         command_robot_drivers(command);
@@ -244,7 +246,7 @@ void loop()
         serial_printf("1:%f\n", vesc_feedbacks[0]);
     }
 
-    if (esc_loading.get_feedbacks(loading_feedbacks)) {
+    if (esc_arm.get_feedbacks(loading_feedbacks)) {
         serial_printf("loading_angle :%f\n", loading_feedbacks[3]);
 
         loading_check = true;
@@ -262,8 +264,8 @@ void loop()
         motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
         motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
-        esc_loading.set_init(3, motor_config_loading);
-        esc_loading.set_gains(3, 0.05f, 0.0f, 0.0f, 0.0f);
+        esc_arm.set_init(3, motor_config_loading);
+        esc_arm.set_gains(3, 0.1f, 0.0f, 0.0f, 0.0f);
         loading_check      = false;
         last_start_encoder = start_encoder;
     }
