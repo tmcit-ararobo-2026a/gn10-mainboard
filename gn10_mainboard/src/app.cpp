@@ -141,6 +141,18 @@ void command_robot_drivers(const robot_config::command_t& command)
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
+
+    float arm_hight_vel = 0.0f;
+    if (teleop.buttons.left_down) {
+        if (teleop.buttons.right_up) {
+            arm_hight_vel = 1.0f;
+        }
+        if (teleop.buttons.right_down) {
+            arm_hight_vel = -1.0f;
+        }
+    }
+    arm_hight.set_target(arm_hight_vel);
+
     // serial_printf("%f\n", arm_and_loading_target[2]);
 
     /*
