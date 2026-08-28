@@ -120,22 +120,21 @@ void command_robot_drivers(const robot_config::command_t& command)
     // Control the arm with C610
     float arm_and_loading_target[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
-    arm_and_loading_target[0] = (float)command.bucket_arm_hight * c610_radius / 0.001;  //[rad/s]
+    arm_and_loading_target[0] = (float)command.bucket_arm_hight / c610_radius / 0.001;  //[rad/s]
 
     // hold
-    if (command.bucket_arm_hold == 0) {
+
+    if (command.bucket_arm_hold) {
+        arm_and_loading_target[1] = M_1_PI / 0.001f;
     }
-    if (command.bucket_arm_hold == 1) {
-        arm_and_loading_target[1] = M_PI / 0.001f;
-    }
-    if (command.bucket_arm_hold == 2) {
-        arm_and_loading_target[1] += M_PI / 0.001f;
+    if (!command.bucket_arm_hold) {
+        arm_and_loading_target[1] = -M_1_PI / 0.001f;
     }
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[4] = loading_count * (float)(2 * M_PI / 3);
-        loading_success           = false;
+        arm_and_loading_target[3] = loading_count * (float)(2 * M_PI / 3);
+        loading_success           = true;
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
@@ -188,7 +187,7 @@ void setup()
 
     for (uint8_t i = 0; i < 3; i++) {
         esc_arm_and_loading.set_init(i, motor_config_arm);
-        esc_arm_and_loading.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
+        esc_arm_and_loading.set_gains(i, 0.8f, 0.8f, 0.0f, 0.0f);
     }
 
     // Initialize Ethernet
@@ -198,8 +197,8 @@ void setup()
     conversion.set_belt_vel_init(0.3f);
     conversion.set_belt_vel_adjust_value(0.005f);
 
-    conversion.set_bucket_hight_value(1);
-    conversion.set_bucket_limit_value(110, 0);
+    conversion.set_bucket_hight_value(100);
+    conversion.set_bucket_limit_value(11000, 0);
 
     conversion.set_wheel_max_vel(3.0f);
     conversion.set_angular_max_vel(3.0f);
@@ -226,8 +225,7 @@ void loop()
         if (loading_count == 0) {
             motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
             motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-            esc_arm_and_loading.set_init(4, motor_config_loading);
-            esc_arm_and_loading.set_gains(4, 0.1f, 0.0f, 0.0f, 0.0f);
+            esc_arm_and_loading.set_init(3, motor_config_loading);
         }
         loading_count++;
         loading_success = false;
