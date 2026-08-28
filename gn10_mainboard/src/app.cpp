@@ -174,7 +174,9 @@ void setup()
     motor_config_arm.set_max_duty_ratio(1.0f);
     motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_arm.set_encoder_type(gn10_can::devices::EncoderType::None);
-
+    motor_config_hand.set_max_duty_ratio(1.0f);
+    motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
+    motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
     // Initialize devices on the network
