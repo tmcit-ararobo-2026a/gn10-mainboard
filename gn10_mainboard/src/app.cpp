@@ -134,11 +134,12 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[3] = loading_count * (float)(2 * M_PI / 3);
+        arm_and_loading_target[2] = loading_count * (float)(10000 * M_PI);
         loading_success           = true;
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
+
     /*
         serial_printf(
             "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
@@ -231,8 +232,8 @@ void loop()
             motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
             motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
-            esc_arm_and_loading.set_init(3, motor_config_loading);
-            esc_arm_and_loading.set_gains(3, -1.0f, 0.0f, 0.0f, 0.0f);
+            esc_arm_and_loading.set_init(2, motor_config_loading);
+            esc_arm_and_loading.set_gains(2, -3.0f, 0.0f, 0.0f, 0.0f);
         }
         loading_count++;
         loading_success = false;
