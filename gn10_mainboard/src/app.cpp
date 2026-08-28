@@ -49,6 +49,7 @@ gn10_can::devices::MotorConfig motor_config_hand;
 gn10_can::devices::MotorConfig motor_config_arm;
 gn10_can::devices::MotorConfig motor_config_belt;
 gn10_can::devices::MotorConfig motor_config_loading;
+gn10_can::devices::MotorConfig motor_config_arm_hight;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -65,6 +66,7 @@ gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm_and_loading(fdcan3_bus, 2);
+gn10_can::devices::MotorDriverClient arm_hight(can1_bus, 0);
 
 // Ethernet
 RobotEthernet ether;
@@ -180,6 +182,9 @@ void setup()
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
+    motor_config_arm_hight.set_max_duty_ratio(0.5f);
+    motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
+    motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
     // Initialize devices on the network
     solenoid.set_init();
@@ -195,6 +200,8 @@ void setup()
 
     esc_arm_and_loading.set_init(1, motor_config_hand);
     esc_arm_and_loading.set_gains(1, 0.2f, 0.0f, 0.0f, 0.0f);
+
+    arm_hight.set_init(motor_config_arm_hight);
 
     // Initialize Ethernet
     ether.init();
