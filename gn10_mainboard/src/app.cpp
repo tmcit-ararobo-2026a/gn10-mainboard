@@ -28,6 +28,7 @@ constexpr float c610_radius                       = 0.122f;  // 単位[cm]
 uint32_t heartbeat_last_toggle_time_ms = 0;
 // Retained Data
 float vesc_feedbacks[4];
+float arm_and_loading_target[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
 /**
  * @brief Toggle heartbeat LED at a fixed interval.
@@ -119,7 +120,6 @@ void command_robot_drivers(const robot_config::command_t& command)
     solenoid.set_target(targets);
 
     // Control the arm with C610
-    float arm_and_loading_target[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
     arm_and_loading_target[0] = (float)command.bucket_arm_hight / c610_radius / 0.001;  //[rad/s]
 
@@ -134,11 +134,12 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[2] = loading_count * (float)(10000 * M_PI);
+        arm_and_loading_target[2] = -loading_count * (float)(M_PI);
         loading_success           = true;
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
+    // serial_printf("%f\n", arm_and_loading_target[2]);
 
     /*
         serial_printf(
@@ -233,7 +234,7 @@ void loop()
             motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
             esc_arm_and_loading.set_init(2, motor_config_loading);
-            esc_arm_and_loading.set_gains(2, -3.0f, 0.0f, 0.0f, 0.0f);
+            esc_arm_and_loading.set_gains(2, -1000.0f, 10.0f, 0.0f, 0.0f);
         }
         loading_count++;
         loading_success = false;
