@@ -44,6 +44,7 @@ void update_heartbeat_led()
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config_wheel;
+gn10_can::devices::MotorConfig motor_config_hand;
 gn10_can::devices::MotorConfig motor_config_arm;
 gn10_can::devices::MotorConfig motor_config_belt;
 gn10_can::devices::MotorConfig motor_config_loading;
@@ -72,8 +73,8 @@ bool initilized_belt = false;
 float vesc_vel       = 0.0f;
 
 // loading
-float loading_count  = 0;
-bool loading_success = false;
+uint8_t loading_count = 0;
+bool loading_success  = true;
 
 // Inverse Kinematics
 ThreeWheelOmni omni(0.5f, 0.1f);
@@ -125,10 +126,10 @@ void command_robot_drivers(const robot_config::command_t& command)
     // hold
 
     if (command.bucket_arm_hold) {
-        arm_and_loading_target[1] = M_1_PI / 0.001f;
+        arm_and_loading_target[1] = M_1_PI / 2 / 0.001f;
     }
     if (!command.bucket_arm_hold) {
-        arm_and_loading_target[1] = -M_1_PI / 0.001f;
+        arm_and_loading_target[1] = -M_1_PI / 2 / 0.001f;
     }
 
     // loading
@@ -138,21 +139,21 @@ void command_robot_drivers(const robot_config::command_t& command)
     }
 
     esc_arm_and_loading.set_targets(arm_and_loading_target);
-
-    serial_printf(
-        "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
-        wheel_target[0],
-        wheel_target[1],
-        wheel_target[2],
-        command.belt_vel,
-        targets[0],
-        targets[1],
-        targets[2],
-        arm_and_loading_target[0],
-        arm_and_loading_target[1],
-        arm_and_loading_target[2],
-        arm_and_loading_target[3]
-    );
+    /*
+        serial_printf(
+            "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
+            wheel_target[0],
+            wheel_target[1],
+            wheel_target[2],
+            command.belt_vel,
+            targets[0],
+            targets[1],
+            targets[2],
+            arm_and_loading_target[0],
+            arm_and_loading_target[1],
+            arm_and_loading_target[2],
+            arm_and_loading_target[3]
+        );*/
 }
 }  // namespace
 
@@ -170,7 +171,7 @@ void setup()
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
-    motor_config_arm.set_max_duty_ratio(0.5f);
+    motor_config_arm.set_max_duty_ratio(1.0f);
     motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_arm.set_encoder_type(gn10_can::devices::EncoderType::None);
 
@@ -185,10 +186,11 @@ void setup()
         esc_wheel.set_gains(i, 0.09f, 0.05f, 0.001f, 0.0f);
     }
 
-    for (uint8_t i = 0; i < 3; i++) {
-        esc_arm_and_loading.set_init(i, motor_config_arm);
-        esc_arm_and_loading.set_gains(i, 0.8f, 0.8f, 0.0f, 0.0f);
-    }
+    esc_arm_and_loading.set_init(0, motor_config_arm);
+    esc_arm_and_loading.set_gains(0, 1.0f, 0.0f, 0.0f, 0.0f);
+
+    esc_arm_and_loading.set_init(1, motor_config_hand);
+    esc_arm_and_loading.set_gains(1, 0.2f, 0.0f, 0.0f, 0.0f);
 
     // Initialize Ethernet
     ether.init();
@@ -223,9 +225,12 @@ void loop()
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
         serial_printf("1:%f\n", vesc_feedbacks[0]);
         if (loading_count == 0) {
+            motor_config_loading.set_max_duty_ratio(10.0f);
             motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
             motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
             esc_arm_and_loading.set_init(3, motor_config_loading);
+            esc_arm_and_loading.set_gains(3, -1.0f, 0.0f, 0.0f, 0.0f);
         }
         loading_count++;
         loading_success = false;
