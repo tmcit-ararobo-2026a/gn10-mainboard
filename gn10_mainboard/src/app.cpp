@@ -145,10 +145,10 @@ void command_robot_drivers(const robot_config::command_t& command)
     float arm_hight_vel = 0.0f;
     if (teleop.buttons.left_down) {
         if (teleop.buttons.right_up) {
-            arm_hight_vel = 1.0f;
+            arm_hight_vel = -1.0f;
         }
         if (teleop.buttons.right_down) {
-            arm_hight_vel = -1.0f;
+            arm_hight_vel = 1.0f;
         }
     }
     arm_hight.set_target(arm_hight_vel);
@@ -194,7 +194,7 @@ void setup()
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
-    motor_config_arm_hight.set_max_duty_ratio(0.5f);
+    motor_config_arm_hight.set_max_duty_ratio(0.75f);
     motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
     motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
