@@ -139,7 +139,7 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[2] = -loading_count * (float)(M_PI);
+        arm_and_loading_target[2] = -loading_count * (float)(M_PI) * 0.8;
         loading_success           = true;
     }
 
@@ -183,7 +183,7 @@ void reload_cloth()
         motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
         esc_arm_and_loading.set_init(2, motor_config_loading);
-        esc_arm_and_loading.set_gains(2, -1000.0f, 10.0f, 0.0f, 0.0f);
+        esc_arm_and_loading.set_gains(2, -1500.0f, 30.0f, 0.0f, 0.0f);
     }
     loading_count++;
     loading_success = false;
@@ -268,7 +268,7 @@ void loop()
         throw_time_tick = HAL_GetTick();
     }
 
-    if (3000 + throw_time_tick <= HAL_GetTick() && reload_enabled) {
+    if (2000 + throw_time_tick <= HAL_GetTick() && reload_enabled) {
         reload_cloth();
         reload_enabled = false;
     }
