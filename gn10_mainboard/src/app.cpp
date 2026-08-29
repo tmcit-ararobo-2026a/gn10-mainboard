@@ -86,17 +86,20 @@ constexpr float M3508_GEAR_RATIO = 19.0f;
 ConversionCommand conversion;
 robot_config::teleop_t teleop;
 
+bool reload_enabled = false;
+uint32_t throw_time_tick;
+
 void command_robot_drivers(const robot_config::command_t& command)
 {
     // Set speed to ESC Hub for wheels
-    omni.convert(command.x_vel, command.y_vel, command.angular_vel, 0.0f);
+    omni.convert(-command.x_vel, command.y_vel, command.angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
 
     float wheel_target[4];
-    wheel_target[0] = front * M3508_GEAR_RATIO;
-    wheel_target[1] = left * M3508_GEAR_RATIO;
-    wheel_target[2] = right * M3508_GEAR_RATIO;
+    wheel_target[1] = front * M3508_GEAR_RATIO;
+    wheel_target[2] = left * M3508_GEAR_RATIO;
+    wheel_target[0] = right * M3508_GEAR_RATIO;
     wheel_target[3] = 0.0f;
     esc_wheel.set_targets(wheel_target);
 
@@ -170,6 +173,20 @@ void command_robot_drivers(const robot_config::command_t& command)
             arm_and_loading_target[2],
             arm_and_loading_target[3]
         );*/
+}
+
+void reload_cloth()
+{
+    if (loading_count == 0) {
+        motor_config_loading.set_max_duty_ratio(10.0f);
+        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
+        motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
+        esc_arm_and_loading.set_init(2, motor_config_loading);
+        esc_arm_and_loading.set_gains(2, -1000.0f, 10.0f, 0.0f, 0.0f);
+    }
+    loading_count++;
+    loading_success = false;
 }
 }  // namespace
 
@@ -247,16 +264,13 @@ void loop()
     // Get latest belt angular velocity
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
         serial_printf("1:%f\n", vesc_feedbacks[0]);
-        if (loading_count == 0) {
-            motor_config_loading.set_max_duty_ratio(10.0f);
-            motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
-            motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+        reload_enabled  = true;
+        throw_time_tick = HAL_GetTick();
+    }
 
-            esc_arm_and_loading.set_init(2, motor_config_loading);
-            esc_arm_and_loading.set_gains(2, -1000.0f, 10.0f, 0.0f, 0.0f);
-        }
-        loading_count++;
-        loading_success = false;
+    if (3000 + throw_time_tick <= HAL_GetTick() && reload_enabled) {
+        reload_cloth();
+        reload_enabled = false;
     }
 
     // ボタンが押されたら送る処理
