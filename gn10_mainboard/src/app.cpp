@@ -139,7 +139,7 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[2] = -loading_count * (float)(M_PI) * 0.8;
+        arm_and_loading_target[2] = -loading_count * (float)(M_PI) * 2 / 3;
         loading_success           = true;
     }
 
