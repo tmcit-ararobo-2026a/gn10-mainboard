@@ -97,9 +97,9 @@ void command_robot_drivers(const robot_config::command_t& command)
     omni.getWheelAngularVelocity(&front, &left, &right);
 
     float wheel_target[4];
-    wheel_target[1] = front * M3508_GEAR_RATIO;
-    wheel_target[2] = left * M3508_GEAR_RATIO;
-    wheel_target[0] = right * M3508_GEAR_RATIO;
+    wheel_target[0] = front * M3508_GEAR_RATIO;
+    wheel_target[1] = left * M3508_GEAR_RATIO;
+    wheel_target[2] = right * M3508_GEAR_RATIO;
     wheel_target[3] = 0.0f;
     esc_wheel.set_targets(wheel_target);
 
@@ -183,7 +183,7 @@ void reload_cloth()
         motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
         esc_arm_and_loading.set_init(2, motor_config_loading);
-        esc_arm_and_loading.set_gains(2, -1500.0f, 30.0f, 0.0f, 0.0f);
+        esc_arm_and_loading.set_gains(2, -1.0f, 0.0f, 0.0f, 0.0f);
     }
     loading_count++;
     loading_success = false;
@@ -225,10 +225,10 @@ void setup()
     }
 
     esc_arm_and_loading.set_init(0, motor_config_arm);
-    esc_arm_and_loading.set_gains(0, 1.0f, 0.0f, 0.0f, 0.0f);
+    esc_arm_and_loading.set_gains(0, 0.1f, 0.0f, 0.0f, 0.0f);
 
     esc_arm_and_loading.set_init(1, motor_config_hand);
-    esc_arm_and_loading.set_gains(1, 0.2f, 0.0f, 0.0f, 0.0f);
+    esc_arm_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
 
     arm_hight.set_init(motor_config_arm_hight);
 
