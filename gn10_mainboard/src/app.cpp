@@ -74,6 +74,7 @@ robot_config::debug_pc_t prev_debug_pc = {};
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
+bool belt_move       = false;
 
 // loading
 uint8_t loading_count = 0;
@@ -89,6 +90,7 @@ robot_config::teleop_t teleop;
 bool reload_enabled = false;
 uint32_t throw_time_tick;
 
+robot_config::command_t last_command_;
 void command_robot_drivers(const robot_config::command_t& command)
 {
     // Set speed to ESC Hub for wheels
@@ -109,7 +111,11 @@ void command_robot_drivers(const robot_config::command_t& command)
         vesc_hub.set_init(0, motor_config_belt);
     }
 
-    if (command.belt_throw && initilized_belt) {
+    if (command.belt_throw && initilized_belt && !last_command_.belt_throw) {
+        belt_move = true;
+    }
+
+    if (belt_move) {
         vesc_vel = command.belt_vel;
     } else {
         vesc_vel = 0.0f;
@@ -173,6 +179,7 @@ void command_robot_drivers(const robot_config::command_t& command)
             arm_and_loading_target[2],
             arm_and_loading_target[3]
         );*/
+    last_command_ = command;
 }
 
 void reload_cloth()
@@ -263,8 +270,9 @@ void loop()
     }
     // Get latest belt angular velocity
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
-        serial_printf("1:%f\n", vesc_feedbacks[0]);
+        // serial_printf("1:%f\n", vesc_feedbacks[0]);
         reload_enabled  = true;
+        belt_move       = false;
         throw_time_tick = HAL_GetTick();
     }
 
