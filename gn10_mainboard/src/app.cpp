@@ -9,7 +9,6 @@
 #include "gn10_can/devices/motor_driver_client.hpp"
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
-#include "gn10_can/devices/servo_motor_client.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
 #include "gn10_mainboard/can_driver.hpp"
@@ -21,32 +20,17 @@
 // others
 
 namespace {
-
-constexpr uint32_t k_heartbeat_toggle_interval_ms = 500;
-constexpr float c610_radius                       = 0.122f;  // 単位[cm]
-
-uint32_t heartbeat_last_toggle_time_ms = 0;
-// Retained Data
-float vesc_feedbacks[4];
-float arm_and_loading_target[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
-/**
- * @brief Toggle heartbeat LED at a fixed interval.
- */
-void update_heartbeat_led()
-{
-    const uint32_t now_ms = HAL_GetTick();
-    if ((now_ms - heartbeat_last_toggle_time_ms) >= k_heartbeat_toggle_interval_ms) {
-        heartbeat_last_toggle_time_ms = now_ms;
-        HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-    }
-}
-
+/* ----------------- 定数 ----------------------*/
+constexpr float BUCKET_ARM_HIGHT_PULLEY_RADIUS  = 0.122f;
+constexpr float M3508_GEAR_RATIO                = 19.0f;
+constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
+constexpr uint32_t RELOAD_DELAY_MS              = 2000;
+constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
+/* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config_wheel;
 gn10_can::devices::MotorConfig motor_config_hand;
-gn10_can::devices::MotorConfig motor_config_arm;
 gn10_can::devices::MotorConfig motor_config_belt;
 gn10_can::devices::MotorConfig motor_config_loading;
 gn10_can::devices::MotorConfig motor_config_arm_hight;
@@ -65,91 +49,128 @@ gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::
 gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
-gn10_can::devices::ESCHubClient esc_arm_and_loading(fdcan3_bus, 2);
-gn10_can::devices::MotorDriverClient arm_hight(can1_bus, 0);
+gn10_can::devices::ESCHubClient esc_arm_hold_and_loading(fdcan3_bus, 2);
+gn10_can::devices::MotorDriverClient dc_arm_hight(can1_bus, 0);
 
+/* ---------------------------- ethernet --------------------------*/
 // Ethernet
 RobotEthernet ether;
-robot_config::debug_pc_t prev_debug_pc = {};
-// belt
-bool initilized_belt = false;
-float vesc_vel       = 0.0f;
-bool belt_move       = false;
 
-// loading
-uint8_t loading_count = 0;
-bool loading_success  = true;
-
-// Inverse Kinematics
-ThreeWheelOmni omni(0.5f, 0.1f);
-constexpr float M3508_GEAR_RATIO = 19.0f;
-// Controller conversion
+/* --------------------- ロボット司令 ----------------------------- */
 ConversionCommand conversion;
-robot_config::teleop_t teleop;
+robot_config::command_t last_command_{};
 
-bool reload_enabled = false;
-uint32_t throw_time_tick;
+/* ---------------------------- 運動学 ------------------------- */
+ThreeWheelOmni omni(0.5f, 0.1f);
 
-robot_config::command_t last_command_;
+/* ----------------------- robot control --------------------------*/
+// 装填
+uint8_t reload_count = 0;     // 装填回数
+bool reload_success  = true;  // 装填成功
+bool reload_enabled  = false;
+uint32_t release_time_tick;
+
+// ベルト直動
+std::array<float, 4> vesc_feedbacks{};  // VESCからのフィードバック
+bool initilized_vesc = false;           // VESCを一度でも初期化したかどうか
+bool vesc_throwing   = false;           // VESCを動かして射出しているかどうか（射出命令）
+
+// バケツアーム
+std::array<float, 4> arm_hold_and_loading_target{0.0f, 0.0f, 0.0f, 0.0f};
+
+/* --------------------- コントローラー（teleop）との通信 ---------------------*/
+robot_config::teleop_t teleop{};
+
+/* --------------------- PCとの通信 -----------------------------*/
+robot_config::debug_pc_t prev_debug_pc{};
+
+/* ------------------ Lチカ ----------------------- */
+uint32_t heartbeat_last_toggle_time_ms = 0;
+/**
+ * @brief 一定周期のLEDトグル
+ */
+void update_heartbeat_led()
+{
+    const uint32_t now_ms = HAL_GetTick();
+    if ((now_ms - heartbeat_last_toggle_time_ms) >= HEARTBEAT_TOGGLE_INTERVAL_MS) {
+        heartbeat_last_toggle_time_ms = now_ms;
+        HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
+    }
+}
+
+void reload_cloth()
+{
+    if (reload_count == 0) {
+        motor_config_loading.set_max_duty_ratio(10.0f);
+        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
+        motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
+        esc_arm_hold_and_loading.set_init(2, motor_config_loading);
+        esc_arm_hold_and_loading.set_gains(2, -1.0f, 0.0f, 0.0f, 0.0f);
+    }
+    reload_count++;
+    reload_success = false;
+}
+
+/**
+ * @brief ロボット司令より各アクチュエータに司令を送る
+ *
+ * @param command
+ */
 void command_robot_drivers(const robot_config::command_t& command)
 {
-    // Set speed to ESC Hub for wheels
+    // 足回り
     omni.convert(-command.x_vel, command.y_vel, command.angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
+    std::array<float, 4> wheel_targets{
+        front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
+    };
+    esc_wheel.set_targets(wheel_targets.data());
 
-    float wheel_target[4];
-    wheel_target[0] = front * M3508_GEAR_RATIO;
-    wheel_target[1] = left * M3508_GEAR_RATIO;
-    wheel_target[2] = right * M3508_GEAR_RATIO;
-    wheel_target[3] = 0.0f;
-    esc_wheel.set_targets(wheel_target);
-
-    // Control the belt-type injection
+    // ベルト直動
     if (command.belt_init) {
-        initilized_belt = true;
+        initilized_vesc = true;
         vesc_hub.set_init(0, motor_config_belt);
     }
-
-    if (command.belt_throw && initilized_belt && !last_command_.belt_throw) {
-        belt_move = true;
+    if (command.belt_throw && initilized_vesc && !last_command_.belt_throw) {
+        vesc_throwing = true;
     }
 
-    if (belt_move) {
-        vesc_vel = command.belt_vel;
-    } else {
-        vesc_vel = 0.0f;
+    std::array<float, 4> vesc_target{0.0f, 0.0f, 0.0f, 0.0f};
+    if (vesc_throwing) {
+        vesc_target[0] = command.belt_vel;
     }
+    vesc_hub.set_targets(vesc_target.data());
 
-    float vesc_target[4] = {vesc_vel, 0.0f, 0.0f, 0.0f};
-    vesc_hub.set_targets(vesc_target);
-    // Control the air-type injection
-    std::array<bool, 8> targets{};
-    targets[0] = command.air_rauncher_for_flag;
-    targets[1] = command.air_rauncher_for_desk_r;
-    targets[2] = command.air_rauncher_for_desk_l;
-    solenoid.set_target(targets);
+    // エア射出
+    std::array<bool, 8> solenoid_targets{};
+    solenoid_targets[0] = command.air_rauncher_for_flag;
+    solenoid_targets[1] = command.air_rauncher_for_desk_r;
+    solenoid_targets[2] = command.air_rauncher_for_desk_l;
+    solenoid.set_target(solenoid_targets);
 
     // Control the arm with C610
 
-    arm_and_loading_target[0] = (float)command.bucket_arm_hight / c610_radius / 0.001;  //[rad/s]
+    arm_hold_and_loading_target[0] = static_cast<float>(command.bucket_arm_hight) * 0.1f /
+                                     BUCKET_ARM_HIGHT_PULLEY_RADIUS;  //[rad]
 
     // hold
-
     if (command.bucket_arm_hold) {
-        arm_and_loading_target[1] = M_1_PI / 2 / 0.001f;
+        arm_hold_and_loading_target[1] = M_1_PI / 2 / 0.001f;
     }
     if (!command.bucket_arm_hold) {
-        arm_and_loading_target[1] = -M_1_PI / 2 / 0.001f;
+        arm_hold_and_loading_target[1] = -M_1_PI / 2 / 0.001f;
     }
 
     // loading
-    if (!loading_success) {
-        arm_and_loading_target[2] = -loading_count * (float)(M_PI) * 2 / 3;
-        loading_success           = true;
+    if (!reload_success) {
+        arm_hold_and_loading_target[2] =
+            -static_cast<float>(reload_count) * static_cast<float>(M_PI) * 2 / 3;
+        reload_success = true;
     }
 
-    esc_arm_and_loading.set_targets(arm_and_loading_target);
+    esc_arm_hold_and_loading.set_targets(arm_hold_and_loading_target.data());
 
     float arm_hight_vel = 0.0f;
     if (teleop.buttons.left_down) {
@@ -160,41 +181,10 @@ void command_robot_drivers(const robot_config::command_t& command)
             arm_hight_vel = 1.0f;
         }
     }
-    arm_hight.set_target(arm_hight_vel);
-
-    // serial_printf("%f\n", arm_and_loading_target[2]);
-
-    /*
-        serial_printf(
-            "f:%3.1f, l:%3.1f, r:%3.1f, vesc:%.2f, air:%d, %d, %d, arm:%.2f, %.2f, %.2f, %.2f\n",
-            wheel_target[0],
-            wheel_target[1],
-            wheel_target[2],
-            command.belt_vel,
-            targets[0],
-            targets[1],
-            targets[2],
-            arm_and_loading_target[0],
-            arm_and_loading_target[1],
-            arm_and_loading_target[2],
-            arm_and_loading_target[3]
-        );*/
+    dc_arm_hight.set_target(arm_hight_vel);
     last_command_ = command;
 }
 
-void reload_cloth()
-{
-    if (loading_count == 0) {
-        motor_config_loading.set_max_duty_ratio(10.0f);
-        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
-        motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-
-        esc_arm_and_loading.set_init(2, motor_config_loading);
-        esc_arm_and_loading.set_gains(2, -1.0f, 0.0f, 0.0f, 0.0f);
-    }
-    loading_count++;
-    loading_success = false;
-}
 }  // namespace
 
 /**
@@ -202,6 +192,8 @@ void reload_cloth()
  */
 void setup()
 {
+    HAL_Delay(ETHER_INIT_DELAY_MS);
+
     // CAN initialization
     can1_driver.init();
     fdcan2_driver.init();
@@ -211,34 +203,29 @@ void setup()
     motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
-    motor_config_arm.set_max_duty_ratio(1.0f);
-    motor_config_arm.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm.set_encoder_type(gn10_can::devices::EncoderType::None);
+
     motor_config_hand.set_max_duty_ratio(1.0f);
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
+
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
+
     motor_config_arm_hight.set_max_duty_ratio(0.75f);
     motor_config_arm_hight.set_reverse_limit_switch(true, 0);
     motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
     motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
     // Initialize devices on the network
-    solenoid.set_init();
-    power_manager.set_init(power_manager_config);
-    HAL_Delay(1000);
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, 0.09f, 0.05f, 0.001f, 0.0f);
     }
+    esc_arm_hold_and_loading.set_init(1, motor_config_hand);
+    esc_arm_hold_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
 
-    esc_arm_and_loading.set_init(0, motor_config_arm);
-    esc_arm_and_loading.set_gains(0, 0.1f, 0.0f, 0.0f, 0.0f);
-
-    esc_arm_and_loading.set_init(1, motor_config_hand);
-    esc_arm_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
-
-    arm_hight.set_init(motor_config_arm_hight);
+    dc_arm_hight.set_init(motor_config_arm_hight);
+    solenoid.set_init();
+    power_manager.set_init(power_manager_config);
 
     // Initialize Ethernet
     ether.init();
@@ -262,22 +249,21 @@ void setup()
  */
 void loop()
 {
+    const uint32_t now_ms = HAL_GetTick();
     // Get latest teleop
-
     if (ether.receive_teleop(teleop)) {
         robot_config::command_t command;
         command = conversion.conversion(teleop);
         command_robot_drivers(command);
     }
     // Get latest belt angular velocity
-    if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
-        // serial_printf("1:%f\n", vesc_feedbacks[0]);
-        reload_enabled  = true;
-        belt_move       = false;
-        throw_time_tick = HAL_GetTick();
+    if (vesc_hub.get_feedbacks(vesc_feedbacks.data())) {
+        reload_enabled    = true;
+        vesc_throwing     = false;
+        release_time_tick = now_ms;
     }
 
-    if (2000 + throw_time_tick <= HAL_GetTick() && reload_enabled) {
+    if (reload_enabled && (now_ms - release_time_tick >= RELOAD_DELAY_MS)) {
         reload_cloth();
         reload_enabled = false;
     }
@@ -289,7 +275,7 @@ void loop()
     current_debug_pc.jetson_shutdown =
         (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
     current_debug_pc.node_start =
-        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin == GPIO_PIN_SET));
+        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin) == GPIO_PIN_SET);
     current_debug_pc.node_stop =
         (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
     if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
@@ -312,12 +298,11 @@ extern "C" {
  */
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 {
+    (void)RxFifo0ITs;
     if (hfdcan->Instance == hfdcan1.Instance) {
         can1_bus.update();
-
     } else if (hfdcan->Instance == hfdcan2.Instance) {
         fdcan2_bus.update();
-
     } else if (hfdcan->Instance == hfdcan3.Instance) {
         fdcan3_bus.update();
     }
