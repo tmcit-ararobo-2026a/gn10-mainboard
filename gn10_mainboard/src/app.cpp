@@ -219,6 +219,7 @@ void setup()
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
     motor_config_arm_hight.set_max_duty_ratio(0.75f);
+    motor_config_arm_hight.set_reverse_limit_switch(true, 0);
     motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
     motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
