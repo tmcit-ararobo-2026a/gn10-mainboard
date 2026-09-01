@@ -69,8 +69,8 @@ void Error_Handler(void);
 #define W5500_RST_GPIO_Port GPIOA
 #define SPI1_CS_Pin GPIO_PIN_4
 #define SPI1_CS_GPIO_Port GPIOC
-#define LED_RAD_Pin GPIO_PIN_10
-#define LED_RAD_GPIO_Port GPIOC
+#define LED_RED_Pin GPIO_PIN_10
+#define LED_RED_GPIO_Port GPIOC
 #define LED_GREEN_Pin GPIO_PIN_11
 #define LED_GREEN_GPIO_Port GPIOC
 #define LED_BLUE_Pin GPIO_PIN_12

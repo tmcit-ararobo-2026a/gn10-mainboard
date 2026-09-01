@@ -13,7 +13,7 @@ bool RobotEthernet::init()
     if (W5500Init()) {
     } else {
         // 失敗したらW5500が利用できない
-        HAL_GPIO_WritePin(LED_RAD_GPIO_Port, LED_RAD_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
         return false;
     }
     uint8_t ver = getVERSIONR();  // または WIZCHIP_READ(VERSIONR);

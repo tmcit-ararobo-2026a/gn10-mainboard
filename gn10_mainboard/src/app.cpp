@@ -320,7 +320,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 
     } else if (hfdcan->Instance == hfdcan3.Instance) {
         fdcan3_bus.update();
-        HAL_GPIO_TogglePin(LED_RAD_GPIO_Port, LED_RAD_Pin);
     }
 }
 }
