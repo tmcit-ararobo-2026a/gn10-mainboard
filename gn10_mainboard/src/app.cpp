@@ -74,6 +74,7 @@ robot_config::debug_pc_t prev_debug_pc = {};
 // belt
 bool initilized_belt = false;
 float vesc_vel       = 0.0f;
+bool belt_move       = false;
 
 // loading
 uint8_t loading_count = 0;
@@ -86,10 +87,14 @@ constexpr float M3508_GEAR_RATIO = 19.0f;
 ConversionCommand conversion;
 robot_config::teleop_t teleop;
 
+bool reload_enabled = false;
+uint32_t throw_time_tick;
+
+robot_config::command_t last_command_;
 void command_robot_drivers(const robot_config::command_t& command)
 {
     // Set speed to ESC Hub for wheels
-    omni.convert(command.x_vel, command.y_vel, command.angular_vel, 0.0f);
+    omni.convert(-command.x_vel, command.y_vel, command.angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
 
@@ -106,7 +111,11 @@ void command_robot_drivers(const robot_config::command_t& command)
         vesc_hub.set_init(0, motor_config_belt);
     }
 
-    if (command.belt_throw && initilized_belt) {
+    if (command.belt_throw && initilized_belt && !last_command_.belt_throw) {
+        belt_move = true;
+    }
+
+    if (belt_move) {
         vesc_vel = command.belt_vel;
     } else {
         vesc_vel = 0.0f;
@@ -136,7 +145,7 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // loading
     if (!loading_success) {
-        arm_and_loading_target[2] = -loading_count * (float)(M_PI);
+        arm_and_loading_target[2] = -loading_count * (float)(M_PI) * 2 / 3;
         loading_success           = true;
     }
 
@@ -170,6 +179,21 @@ void command_robot_drivers(const robot_config::command_t& command)
             arm_and_loading_target[2],
             arm_and_loading_target[3]
         );*/
+    last_command_ = command;
+}
+
+void reload_cloth()
+{
+    if (loading_count == 0) {
+        motor_config_loading.set_max_duty_ratio(10.0f);
+        motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
+        motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
+        esc_arm_and_loading.set_init(2, motor_config_loading);
+        esc_arm_and_loading.set_gains(2, -1.0f, 0.0f, 0.0f, 0.0f);
+    }
+    loading_count++;
+    loading_success = false;
 }
 }  // namespace
 
@@ -195,6 +219,7 @@ void setup()
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
     motor_config_arm_hight.set_max_duty_ratio(0.75f);
+    motor_config_arm_hight.set_reverse_limit_switch(true, 0);
     motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
     motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
@@ -208,10 +233,10 @@ void setup()
     }
 
     esc_arm_and_loading.set_init(0, motor_config_arm);
-    esc_arm_and_loading.set_gains(0, 1.0f, 0.0f, 0.0f, 0.0f);
+    esc_arm_and_loading.set_gains(0, 0.1f, 0.0f, 0.0f, 0.0f);
 
     esc_arm_and_loading.set_init(1, motor_config_hand);
-    esc_arm_and_loading.set_gains(1, 0.2f, 0.0f, 0.0f, 0.0f);
+    esc_arm_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
 
     arm_hight.set_init(motor_config_arm_hight);
 
@@ -246,17 +271,15 @@ void loop()
     }
     // Get latest belt angular velocity
     if (vesc_hub.get_feedbacks(vesc_feedbacks)) {
-        serial_printf("1:%f\n", vesc_feedbacks[0]);
-        if (loading_count == 0) {
-            motor_config_loading.set_max_duty_ratio(10.0f);
-            motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
-            motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+        // serial_printf("1:%f\n", vesc_feedbacks[0]);
+        reload_enabled  = true;
+        belt_move       = false;
+        throw_time_tick = HAL_GetTick();
+    }
 
-            esc_arm_and_loading.set_init(2, motor_config_loading);
-            esc_arm_and_loading.set_gains(2, -1000.0f, 10.0f, 0.0f, 0.0f);
-        }
-        loading_count++;
-        loading_success = false;
+    if (2000 + throw_time_tick <= HAL_GetTick() && reload_enabled) {
+        reload_cloth();
+        reload_enabled = false;
     }
 
     // ボタンが押されたら送る処理
