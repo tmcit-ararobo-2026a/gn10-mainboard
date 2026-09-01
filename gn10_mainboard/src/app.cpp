@@ -322,4 +322,20 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
         fdcan3_bus.update();
     }
 }
+
+/**
+ * @brief Receive callback for FDCAN FIFO1.
+ */
+void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
+{
+    if (hfdcan->Instance == hfdcan1.Instance) {
+        can1_bus.update();
+
+    } else if (hfdcan->Instance == hfdcan2.Instance) {
+        fdcan2_bus.update();
+
+    } else if (hfdcan->Instance == hfdcan3.Instance) {
+        fdcan3_bus.update();
+    }
+}
 }
