@@ -98,6 +98,31 @@ void update_heartbeat_led()
     }
 }
 
+/**
+ * @brief エンコーダー端子に接続したスイッチを操作することで、PCに電源やプログラム起動の命令を送る
+ *
+ */
+void read_button_and_send_debug_pc_packet()
+{
+    // ボタンが押されたら送る処理
+    robot_config::debug_pc_t current_debug_pc = {};
+    current_debug_pc.jetson_restart =
+        (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET);
+    current_debug_pc.jetson_shutdown =
+        (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
+    current_debug_pc.node_start =
+        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin) == GPIO_PIN_SET);
+    current_debug_pc.node_stop =
+        (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
+    if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
+        current_debug_pc.jetson_shutdown != prev_debug_pc.jetson_shutdown ||
+        current_debug_pc.node_start != prev_debug_pc.node_start ||
+        current_debug_pc.node_stop != prev_debug_pc.node_stop) {
+        ether.send_pc_debug_data(current_debug_pc);
+        prev_debug_pc = current_debug_pc;
+    }
+}
+
 void reload_cloth()
 {
     if (reload_count == 0) {
@@ -268,23 +293,7 @@ void loop()
         reload_enabled = false;
     }
 
-    // ボタンが押されたら送る処理
-    robot_config::debug_pc_t current_debug_pc = {};
-    current_debug_pc.jetson_restart =
-        (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET);
-    current_debug_pc.jetson_shutdown =
-        (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
-    current_debug_pc.node_start =
-        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin) == GPIO_PIN_SET);
-    current_debug_pc.node_stop =
-        (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
-    if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
-        current_debug_pc.jetson_shutdown != prev_debug_pc.jetson_shutdown ||
-        current_debug_pc.node_start != prev_debug_pc.node_start ||
-        current_debug_pc.node_stop != prev_debug_pc.node_stop) {
-        ether.send_pc_debug_data(current_debug_pc);
-        prev_debug_pc = current_debug_pc;
-    }
+    read_button_and_send_debug_pc_packet();
 
     // Basic System Process
     update_heartbeat_led();
