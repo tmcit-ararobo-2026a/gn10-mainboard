@@ -63,7 +63,7 @@ ConversionCommand conversion;
 robot_config::command_t last_command_{};
 
 /* ---------------------------- 運動学 ------------------------- */
-ThreeWheelOmni omni(0.5f, 0.1f);
+ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 
 /* ----------------------- robot control --------------------------*/
 // 装填
