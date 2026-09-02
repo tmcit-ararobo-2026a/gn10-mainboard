@@ -63,9 +63,9 @@ struct command_t {
     bool belt_throw;
     bool belt_init;
     // エアシリンダー射出 3byte
-    bool air_rauncher_for_flag;
-    bool air_rauncher_for_desk_r;
-    bool air_rauncher_for_desk_l;
+    bool air_launcher_for_flag;
+    bool air_launcher_for_desk_r;
+    bool air_launcher_for_desk_l;
     // 装填処理 1byte
     bool loading;
     // 予備 7byte
