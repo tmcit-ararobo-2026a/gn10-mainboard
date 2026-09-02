@@ -227,11 +227,9 @@ void setup()
     fdcan3_driver.init();
 
     // Motor configuration
-    motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
 
-    motor_config_hand.set_max_duty_ratio(1.0f);
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
 
@@ -254,7 +252,7 @@ void setup()
         esc_wheel.set_gains(i, 0.09f, 0.05f, 0.001f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
-    esc_arm_hold_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
+    esc_arm_hold_and_loading.set_gains(1, 0.005f, 0.0f, 0.0f, 0.0f);
 
     dc_arm_hight.set_init(motor_config_arm_hight);
     solenoid.set_init();
