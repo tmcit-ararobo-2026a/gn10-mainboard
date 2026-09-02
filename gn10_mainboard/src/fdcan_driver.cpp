@@ -11,7 +11,7 @@ bool FDCANDriver::init()
     filter.IdType       = FDCAN_STANDARD_ID;
     filter.FilterIndex  = 0;
     filter.FilterType   = FDCAN_FILTER_MASK;
-    filter.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
+    filter.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
     filter.FilterID1    = 0x000;
     filter.FilterID2    = 0x000;
 
@@ -21,7 +21,7 @@ bool FDCANDriver::init()
     if (HAL_FDCAN_Start(hfdcan_) != HAL_OK) {
         return false;
     }
-    if (HAL_FDCAN_ActivateNotification(hfdcan_, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+    if (HAL_FDCAN_ActivateNotification(hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
         return false;
     }
     return true;
@@ -65,7 +65,7 @@ bool FDCANDriver::receive(FDCANFrame& out_frame)
     FDCAN_RxHeaderTypeDef rx_header;
     uint8_t rx_data[64];
 
-    if (HAL_FDCAN_GetRxMessage(hfdcan_, FDCAN_RX_FIFO1, &rx_header, rx_data) != HAL_OK) {
+    if (HAL_FDCAN_GetRxMessage(hfdcan_, FDCAN_RX_FIFO0, &rx_header, rx_data) != HAL_OK) {
         return false;
     }
 
