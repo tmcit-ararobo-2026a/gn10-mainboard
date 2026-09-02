@@ -28,12 +28,13 @@ constexpr uint32_t RELOAD_DELAY_MS              = 2000;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
-gn10_can::devices::power_manager::Config power_manager_config;
 gn10_can::devices::MotorConfig motor_config_wheel;
 gn10_can::devices::MotorConfig motor_config_hand;
 gn10_can::devices::MotorConfig motor_config_belt;
 gn10_can::devices::MotorConfig motor_config_loading;
 gn10_can::devices::MotorConfig motor_config_arm_hight;
+gn10_can::devices::power_manager::Config drive_power_manager_config;
+gn10_can::devices::power_manager::Config logic_power_manager_config;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -46,11 +47,12 @@ gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
 gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
     robot_control_hub(fdcan2_bus, 0);
-gn10_can::devices::PowerManagerClient power_manager(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient vesc_hub(fdcan3_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm_hold_and_loading(fdcan3_bus, 2);
 gn10_can::devices::MotorDriverClient dc_arm_hight(can1_bus, 0);
+gn10_can::devices::PowerManagerClient drive_power_manager(fdcan2_bus, 0);
+gn10_can::devices::PowerManagerClient logic_power_manager(fdcan2_bus, 1);
 
 /* ---------------------------- ethernet --------------------------*/
 // Ethernet
@@ -61,7 +63,7 @@ ConversionCommand conversion;
 robot_config::command_t last_command_{};
 
 /* ---------------------------- 運動学 ------------------------- */
-ThreeWheelOmni omni(0.5f, 0.1f);
+ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 
 /* ----------------------- robot control --------------------------*/
 // 装填
@@ -225,11 +227,9 @@ void setup()
     fdcan3_driver.init();
 
     // Motor configuration
-    motor_config_wheel.set_max_duty_ratio(0.5f);
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
 
-    motor_config_hand.set_max_duty_ratio(1.0f);
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
 
@@ -240,17 +240,24 @@ void setup()
     motor_config_arm_hight.set_motor_type(gn10_can::devices::MotorType::DC);
     motor_config_arm_hight.set_encoder_type(gn10_can::devices::EncoderType::None);
 
+    // Other device configuration
+    drive_power_manager_config.sensor_rate_ms            = 100;
+    drive_power_manager_config.use_remote_emergency_stop = false;
+    logic_power_manager_config.sensor_rate_ms            = 100;
+    logic_power_manager_config.use_remote_emergency_stop = false;
+
     // Initialize devices on the network
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
-    esc_arm_hold_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
+    esc_arm_hold_and_loading.set_gains(1, 0.005f, 0.0f, 0.0f, 0.0f);
 
     dc_arm_hight.set_init(motor_config_arm_hight);
     solenoid.set_init();
-    power_manager.set_init(power_manager_config);
+    drive_power_manager.set_init(drive_power_manager_config);
+    logic_power_manager.set_init(logic_power_manager_config);
 
     // Initialize Ethernet
     ether.init();
