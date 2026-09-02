@@ -243,7 +243,7 @@ void setup()
     // Initialize devices on the network
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
-        esc_wheel.set_gains(i, 0.09f, 0.05f, 0.001f, 0.0f);
+        esc_wheel.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
     esc_arm_hold_and_loading.set_gains(1, 0.02f, 0.0f, 0.0f, 0.0f);
