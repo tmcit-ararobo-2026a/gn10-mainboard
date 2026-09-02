@@ -99,18 +99,18 @@ robot_config::command_t ConversionCommand::conversion(robot_config::teleop_t& te
     }
 
     // エアシリンダー
-    command_.air_rauncher_for_desk_r = false;
-    command_.air_rauncher_for_flag   = false;
-    command_.air_rauncher_for_desk_l = false;
+    command_.air_launcher_for_desk_r = false;
+    command_.air_launcher_for_flag   = false;
+    command_.air_launcher_for_desk_l = false;
 
     if (teleop.buttons.left_right) {
-        command_.air_rauncher_for_desk_r = true;
+        command_.air_launcher_for_desk_r = true;
     }
     if (teleop.buttons.left_left) {
-        command_.air_rauncher_for_desk_l = true;
+        command_.air_launcher_for_desk_l = true;
     }
     if (teleop.buttons.left_up) {
-        command_.air_rauncher_for_flag = true;
+        command_.air_launcher_for_flag = true;
     }
 
     /*装填機構*/

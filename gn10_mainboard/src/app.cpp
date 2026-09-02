@@ -21,7 +21,7 @@
 
 namespace {
 /* ----------------- 定数 ----------------------*/
-constexpr float BUCKET_ARM_HIGHT_PULLEY_RADIUS  = 0.122f;
+constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.122f;
 constexpr float M3508_GEAR_RATIO                = 19.0f;
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 constexpr uint32_t RELOAD_DELAY_MS              = 2000;
@@ -74,8 +74,8 @@ uint32_t release_time_tick;
 
 // ベルト直動
 std::array<float, 4> vesc_feedbacks{};  // VESCからのフィードバック
-bool initilized_vesc = false;           // VESCを一度でも初期化したかどうか
-bool vesc_throwing   = false;           // VESCを動かして射出しているかどうか（射出命令）
+bool initialized_vesc = false;          // VESCを一度でも初期化したかどうか
+bool vesc_throwing    = false;          // VESCを動かして射出しているかどうか（射出命令）
 
 // バケツアーム
 std::array<float, 4> arm_hold_and_loading_target{0.0f, 0.0f, 0.0f, 0.0f};
@@ -157,10 +157,10 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // ベルト直動
     if (command.belt_init) {
-        initilized_vesc = true;
+        initialized_vesc = true;
         vesc_hub.set_init(0, motor_config_belt);
     }
-    if (command.belt_throw && initilized_vesc && !last_command_.belt_throw) {
+    if (command.belt_throw && initialized_vesc && !last_command_.belt_throw) {
         vesc_throwing = true;
     }
 
@@ -172,15 +172,15 @@ void command_robot_drivers(const robot_config::command_t& command)
 
     // エア射出
     std::array<bool, 8> solenoid_targets{};
-    solenoid_targets[0] = command.air_rauncher_for_flag;
-    solenoid_targets[1] = command.air_rauncher_for_desk_r;
-    solenoid_targets[2] = command.air_rauncher_for_desk_l;
+    solenoid_targets[0] = command.air_launcher_for_flag;
+    solenoid_targets[1] = command.air_launcher_for_desk_r;
+    solenoid_targets[2] = command.air_launcher_for_desk_l;
     solenoid.set_target(solenoid_targets);
 
     // Control the arm with C610
 
     arm_hold_and_loading_target[0] = static_cast<float>(command.bucket_arm_hight) * 0.1f /
-                                     BUCKET_ARM_HIGHT_PULLEY_RADIUS;  //[rad]
+                                     BUCKET_ARM_HEIGHT_PULLEY_RADIUS;  //[rad]
 
     // hold
     if (command.bucket_arm_hold) {
