@@ -11,6 +11,7 @@
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
+#include "gn10_mainboard/can_callback_helper.hpp"
 #include "gn10_mainboard/can_driver.hpp"
 #include "gn10_mainboard/conversion_command.hpp"
 #include "gn10_mainboard/fdcan_driver.hpp"
@@ -314,26 +315,9 @@ extern "C" {
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 {
     (void)RxFifo0ITs;
-    if (hfdcan->Instance == hfdcan1.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0 && timeout_counter < 3) {
-            can1_bus.update();
-            timeout_counter++;
-        }
-
-    } else if (hfdcan->Instance == hfdcan2.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0 && timeout_counter < 3) {
-            fdcan2_bus.update();
-            timeout_counter++;
-        }
-    } else if (hfdcan->Instance == hfdcan3.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0) > 0 && timeout_counter < 3) {
-            fdcan3_bus.update();
-            timeout_counter++;
-        }
-    }
+    if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO0)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO0)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO0)) return;
 }
 
 /**
@@ -342,25 +326,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs)
 {
     (void)RxFifo1ITs;
-    if (hfdcan->Instance == hfdcan1.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO1) > 0 && timeout_counter < 3) {
-            can1_bus.update();
-            timeout_counter++;
-        }
-
-    } else if (hfdcan->Instance == hfdcan2.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO1) > 0 && timeout_counter < 3) {
-            fdcan2_bus.update();
-            timeout_counter++;
-        }
-    } else if (hfdcan->Instance == hfdcan3.Instance) {
-        uint8_t timeout_counter = 0;
-        while (HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO1) > 0 && timeout_counter < 3) {
-            fdcan3_bus.update();
-            timeout_counter++;
-        }
-    }
+    if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO1)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO1)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO1)) return;
 }
 }
