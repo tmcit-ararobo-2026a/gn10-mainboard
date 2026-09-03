@@ -11,14 +11,14 @@
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
-#include "app/can_callback_helper.hpp"
-#include "app/can_driver.hpp"
 #include "app/conversion_command.hpp"
-#include "app/fdcan_driver.hpp"
 #include "app/robot_ethernet.hpp"
 #include "app/serial_printf.hpp"
 #include "app/three_wheel_omni.hpp"
 // others
+#include "gn10_stm32_fdcan_driver/can_callback_helper.hpp"
+#include "gn10_stm32_fdcan_driver/can_driver.hpp"
+#include "gn10_stm32_fdcan_driver/fdcan_driver.hpp"
 
 namespace {
 /* ----------------- 定数 ----------------------*/
