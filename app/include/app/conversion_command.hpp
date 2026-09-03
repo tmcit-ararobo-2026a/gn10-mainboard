@@ -1,4 +1,4 @@
-#include "gn10_mainboard/robot_config.hpp"
+#include "app/robot_config.hpp"
 
 class ConversionCommand
 {

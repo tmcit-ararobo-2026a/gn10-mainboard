@@ -1,9 +1,11 @@
-#include "gn10_mainboard/can_driver.hpp"
+#include "app/fdcan_driver.hpp"
+
+#include "gn10_can/core/can_dlc.hpp"
 
 namespace gn10_can {
 namespace drivers {
 
-bool CANDriver::init()
+bool FDCANDriver::init()
 {
     FDCAN_FilterTypeDef filter;
     filter.IdType       = FDCAN_STANDARD_ID;
@@ -25,7 +27,7 @@ bool CANDriver::init()
     return true;
 }
 
-bool CANDriver::send(const CANFrame& frame)
+bool FDCANDriver::send(const FDCANFrame& frame)
 {
     FDCAN_TxHeaderTypeDef tx_header;
     if (frame.is_extended) {
@@ -33,12 +35,13 @@ bool CANDriver::send(const CANFrame& frame)
     } else {
         tx_header.IdType = FDCAN_STANDARD_ID;
     }
+
     tx_header.Identifier          = frame.id;
     tx_header.TxFrameType         = FDCAN_DATA_FRAME;
     tx_header.DataLength          = (uint32_t)frame.dlc;
     tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     tx_header.BitRateSwitch       = FDCAN_BRS_OFF;
-    tx_header.FDFormat            = FDCAN_CLASSIC_CAN;
+    tx_header.FDFormat            = FDCAN_FD_CAN;
     tx_header.TxEventFifoControl  = FDCAN_NO_TX_EVENTS;
     tx_header.MessageMarker       = 0;
 
@@ -57,10 +60,10 @@ bool CANDriver::send(const CANFrame& frame)
     return true;
 }
 
-bool CANDriver::receive(CANFrame& out_frame)
+bool FDCANDriver::receive(FDCANFrame& out_frame)
 {
     FDCAN_RxHeaderTypeDef rx_header;
-    uint8_t rx_data[8];
+    uint8_t rx_data[64];
 
     if (HAL_FDCAN_GetRxMessage(hfdcan_, FDCAN_RX_FIFO0, &rx_header, rx_data) != HAL_OK) {
         return false;

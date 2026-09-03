@@ -1,4 +1,4 @@
-#include "gn10_mainboard/serial_printf.hpp"
+#include "app/serial_printf.hpp"
 
 #include <cstdarg>
 #include <cstdint>

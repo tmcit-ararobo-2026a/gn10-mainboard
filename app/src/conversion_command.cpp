@@ -1,4 +1,4 @@
-#include "gn10_mainboard/conversion_command.hpp"
+#include "app/conversion_command.hpp"
 
 #include <algorithm>
 #include <cstdint>

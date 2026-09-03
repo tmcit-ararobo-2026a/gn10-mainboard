@@ -21,6 +21,11 @@ class CANDriver : public ICANDriver
 public:
     CANDriver(FDCAN_HandleTypeDef* hfdcan) : hfdcan_(hfdcan) {}
 
+    /**
+     * @brief init前に呼び出すことでidの拡張フォーマットを有効化できる
+     *
+     */
+    void set_init_extended_id();
     bool init();
     bool send(const CANFrame& frame) override;
     bool receive(CANFrame& out_frame) override;
@@ -28,6 +33,7 @@ public:
 private:
     FDCAN_HandleTypeDef* hfdcan_;
     const uint32_t TX_FIFO_TIMEOUT = 2;  // 送信FIFOが空くまで待つ際のタイムアウト
+    bool enable_extended           = false;
 };
 }  // namespace drivers
 }  // namespace gn10_can

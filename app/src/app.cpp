@@ -1,4 +1,4 @@
-#include "gn10_mainboard/app.hpp"
+#include "app/app.hpp"
 // std
 #include <cmath>
 // STM32 HAL
@@ -11,13 +11,13 @@
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
-#include "gn10_mainboard/can_callback_helper.hpp"
-#include "gn10_mainboard/can_driver.hpp"
-#include "gn10_mainboard/conversion_command.hpp"
-#include "gn10_mainboard/fdcan_driver.hpp"
-#include "gn10_mainboard/robot_ethernet.hpp"
-#include "gn10_mainboard/serial_printf.hpp"
-#include "gn10_mainboard/three_wheel_omni.hpp"
+#include "app/can_callback_helper.hpp"
+#include "app/can_driver.hpp"
+#include "app/conversion_command.hpp"
+#include "app/fdcan_driver.hpp"
+#include "app/robot_ethernet.hpp"
+#include "app/serial_printf.hpp"
+#include "app/three_wheel_omni.hpp"
 // others
 
 namespace {

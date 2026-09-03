@@ -40,7 +40,7 @@ add_subdirectory(cmake/stm32cubemx)
 
 
 add_subdirectory(gn10_can)
-add_subdirectory(gn10_mainboard)
+add_subdirectory(app)
 add_subdirectory(wiznet_ether)
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -77,6 +77,6 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-    gn10_mainboard
+    app
     # Add user defined libraries
 )
