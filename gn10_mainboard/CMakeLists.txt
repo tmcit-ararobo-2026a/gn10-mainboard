@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.22)
 add_library(gn10_mainboard STATIC
     src/app.cpp
     src/fdcan_driver.cpp
-    src/vesc_can.cpp
     src/can_driver.cpp
     src/serial_printf.cpp
     src/robot_ethernet.cpp
@@ -12,7 +11,6 @@ add_library(gn10_mainboard STATIC
 
 target_include_directories(gn10_mainboard PUBLIC
     include
-    ${CMAKE_SOURCE_DIR}/gn10_can
 )
 target_compile_features(gn10_mainboard PUBLIC cxx_std_17)
 
