@@ -318,7 +318,24 @@ void loop()
     }
 
     gn10_can::devices::power_manager::Sensor drive_power_sensor{};
-    drive_power_manager.get_new_sensor(drive_power_sensor);
+    if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
+        feedback_.drive_battery_voltage_mv = static_cast<uint16_t>(
+            std::clamp(drive_power_sensor.voltage * 1000.0f, 0.0f, (float)UINT16_MAX)
+        );
+        feedback_.drive_battery_current = drive_power_sensor.current;
+    }
+    gn10_can::devices::power_manager::Status drive_power_status{};
+    if (drive_power_manager.get_new_status(drive_power_status)) {
+        feedback_.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
+        feedback_.over_current           = drive_power_status.over_current;
+    }
+    std::array<float, 4> voltages;
+    if (logic_power_manager.get_new_voltages(voltages)) {
+        feedback_.logic_power_voltage_mv       = voltages[0];
+        feedback_.logic_battery_voltages_mv[1] = voltages[1];
+        feedback_.logic_battery_voltages_mv[2] = voltages[2];
+        feedback_.logic_battery_voltages_mv[3] = voltages[3];
+    }
 
     read_button_and_send_debug_pc_packet();
     periodic_feedback();
