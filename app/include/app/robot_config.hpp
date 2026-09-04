@@ -86,13 +86,16 @@ static_assert(sizeof(command_t) == 32);
 struct feedback_t {
     uint8_t header;  // ヘッダー
     uint8_t reserved;
-    uint16_t drive_battery_voltage;
-    uint16_t logic_battery_voltages[2];
-    uint16_t logic_power_voltage;
+    uint16_t drive_battery_voltage_mv;
+    uint16_t logic_power_voltage_mv;
+    uint16_t logic_battery_voltages_mv[3];
+    float drive_battery_current;
     float belt_vel_last;
     float wheel_angular_velocity[3];  // 0:front 1:left 2:right
     float loading_belt_angle;
     float bucket_arm_hight;
+    bool emergency_stop_enabled;
+    bool over_current;
 } __attribute__((__packed__));
 
 union feedback_u {
@@ -100,7 +103,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 34);
+static_assert(sizeof(feedback_t) == 42);
 
 /**
  * @brief 操縦デバイスのレバーの傾きと押し込み

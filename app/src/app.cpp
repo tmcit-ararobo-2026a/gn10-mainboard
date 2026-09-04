@@ -25,6 +25,7 @@ namespace {
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.122f;
 constexpr float M3508_GEAR_RATIO                = 19.0f;
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
+constexpr uint32_t FEEDBACK_INTERVAL_MS         = 100;
 constexpr uint32_t RELOAD_DELAY_MS              = 2000;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 /* ---------------------- gn10-can ---------------------- */
@@ -86,6 +87,7 @@ robot_config::teleop_t teleop{};
 
 /* --------------------- PCとの通信 -----------------------------*/
 robot_config::debug_pc_t prev_debug_pc{};
+robot_config::feedback_t feedback_{};
 
 /* ------------------ Lチカ ----------------------- */
 uint32_t heartbeat_last_toggle_time_ms = 0;
@@ -98,6 +100,20 @@ void update_heartbeat_led()
     if ((now_ms - heartbeat_last_toggle_time_ms) >= HEARTBEAT_TOGGLE_INTERVAL_MS) {
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
+    }
+}
+
+uint32_t feedback_last_send_time_ms = 0;
+/**
+ * @brief 一定周期でフィードバックをEthernetで送信する
+ *
+ */
+void periodic_feedback()
+{
+    const uint32_t now_ms = HAL_GetTick();
+    if ((now_ms - feedback_last_send_time_ms) >= FEEDBACK_INTERVAL_MS) {
+        feedback_last_send_time_ms = now_ms;
+        ether.send_feedback_data(feedback_);
     }
 }
 
@@ -301,7 +317,11 @@ void loop()
         reload_enabled = false;
     }
 
+    gn10_can::devices::power_manager::Sensor drive_power_sensor{};
+    drive_power_manager.get_new_sensor(drive_power_sensor);
+
     read_button_and_send_debug_pc_packet();
+    periodic_feedback();
 
     // Basic System Process
     update_heartbeat_led();
