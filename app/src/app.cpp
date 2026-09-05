@@ -253,7 +253,7 @@ void setup()
     // Initialize devices on the network
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
-        esc_wheel.set_gains(i, 0.3f, 0.0f, 0.0f, 0.0f);
+        esc_wheel.set_gains(i, 0.05f, 0.0f, 0.0f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
     esc_arm_hold_and_loading.set_gains(1, 0.001f, 0.0f, 0.0f, 0.0f);
@@ -273,8 +273,8 @@ void setup()
     conversion.set_bucket_hight_value(100);
     conversion.set_bucket_limit_value(11000, 0);
 
-    conversion.set_wheel_max_vel(3.0f);
-    conversion.set_angular_max_vel(3.0f);
+    conversion.set_wheel_max_vel(4.5f);
+    conversion.set_angular_max_vel(4.5f);
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
