@@ -194,7 +194,7 @@ void command_robot_drivers(const robot_config::command_t& command)
     // loading
     if (!reload_success) {
         arm_hold_and_loading_target[2] =
-            -static_cast<float>(reload_count) * static_cast<float>(M_PI) * 2 / 3;
+            -static_cast<float>(reload_count) * 3.14f * 2 / 3 * 0.96900f;
         reload_success = true;
     }
 
@@ -255,7 +255,7 @@ void setup()
         esc_wheel.set_gains(i, 0.3f, 0.0f, 0.0f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
-    esc_arm_hold_and_loading.set_gains(1, 0.005f, 0.0f, 0.0f, 0.0f);
+    esc_arm_hold_and_loading.set_gains(1, 0.001f, 0.0f, 0.0f, 0.0f);
 
     dc_arm_hight.set_init(motor_config_arm_hight);
     solenoid.set_init();
@@ -278,6 +278,7 @@ void setup()
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }
+std::array<float, 4> loading_feedback = {};
 
 /**
  * @brief Run one control cycle and update status heartbeat LED.
@@ -296,6 +297,16 @@ void loop()
         reload_enabled    = true;
         vesc_throwing     = false;
         release_time_tick = now_ms;
+    }
+
+    if (esc_arm_hold_and_loading.get_feedbacks(loading_feedback.data())) {
+        serial_printf(
+            "%f, %f, %f, %f\n",
+            loading_feedback[0],
+            loading_feedback[1],
+            loading_feedback[2],
+            loading_feedback[3]
+        );
     }
 
     if (reload_enabled && (now_ms - release_time_tick >= RELOAD_DELAY_MS)) {
