@@ -23,6 +23,7 @@
 namespace {
 /* ----------------- 定数 ----------------------*/
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.122f;
+constexpr float SOLVE_LOADING_DEVIATION         = 0.9690f;
 constexpr float M3508_GEAR_RATIO                = 19.0f;
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 constexpr uint32_t RELOAD_DELAY_MS              = 2000;
@@ -194,7 +195,7 @@ void command_robot_drivers(const robot_config::command_t& command)
     // loading
     if (!reload_success) {
         arm_hold_and_loading_target[2] =
-            -static_cast<float>(reload_count) * 3.14f * 2 / 3 * 0.96900f;
+            -static_cast<float>(reload_count) * 3.14f * 2 / 3 * SOLVE_LOADING_DEVIATION;
         reload_success = true;
     }
 
