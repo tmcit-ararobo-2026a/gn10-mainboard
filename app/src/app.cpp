@@ -230,6 +230,8 @@ void setup()
     // Motor configuration
     motor_config_wheel.set_motor_type(gn10_can::devices::MotorType::C620);
     motor_config_wheel.set_encoder_type(gn10_can::devices::EncoderType::None);
+    motor_config_wheel.set_max_duty_ratio(20.0f);
+    motor_config_wheel.set_accel_ratio(1.0f);
 
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);
@@ -250,7 +252,7 @@ void setup()
     // Initialize devices on the network
     for (uint8_t i = 0; i < 4; i++) {
         esc_wheel.set_init(i, motor_config_wheel);
-        esc_wheel.set_gains(i, 0.1f, 0.0f, 0.0f, 0.0f);
+        esc_wheel.set_gains(i, 0.3f, 0.0f, 0.0f, 0.0f);
     }
     esc_arm_hold_and_loading.set_init(1, motor_config_hand);
     esc_arm_hold_and_loading.set_gains(1, 0.005f, 0.0f, 0.0f, 0.0f);
