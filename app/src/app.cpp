@@ -6,15 +6,18 @@
 // gn10-can
 #include "gn10_can/core/can_bus.hpp"
 #include "gn10_can/devices/esc_hub_client.hpp"
+#include "gn10_can/devices/led_client.hpp"
 #include "gn10_can/devices/motor_driver_client.hpp"
 #include "gn10_can/devices/power_manager_client.hpp"
 #include "gn10_can/devices/robot_control_hub_server.hpp"
 #include "gn10_can/devices/solenoid_driver_client.hpp"
 // gn10-mainboard
 #include "app/conversion_command.hpp"
+#include "app/led_info.hpp"
 #include "app/robot_ethernet.hpp"
 #include "app/serial_printf.hpp"
 #include "app/three_wheel_omni.hpp"
+
 // others
 #include "gn10_stm32_fdcan_driver/can_callback_helper.hpp"
 #include "gn10_stm32_fdcan_driver/can_driver.hpp"
@@ -88,6 +91,14 @@ robot_config::teleop_t teleop{};
 /* --------------------- PCとの通信 -----------------------------*/
 robot_config::debug_pc_t prev_debug_pc{};
 
+/* ----------------------- LEDテープ --------------------------*/
+LedInfo right_behind_belt;             // ベルト直動
+LedInfo left_behind_control_voltage1;  // 制御系バッテリー電圧1
+LedInfo left_behind_control_voltage2;  // 制御系バッテリー電圧2
+LedInfo left_behind_drive_voltage;     // 駆動系バッテリー電圧2
+LedInfo forword_air;                   // エアー射出
+LedInfo three_line_localization;       // 自己位置推定
+
 /* ------------------ Lチカ ----------------------- */
 uint32_t heartbeat_last_toggle_time_ms = 0;
 /**
@@ -100,6 +111,39 @@ void update_heartbeat_led()
         heartbeat_last_toggle_time_ms = now_ms;
         HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
     }
+}
+
+/**
+ * @brief setup関数の中で呼ぶLEDの設定。
+ */
+void led_setup()
+{
+    /* ベルト直動 */
+    right_behind_belt.g           = 180;
+    right_behind_belt.led_num_min = 38;
+    right_behind_belt.led_num_max = 75;
+
+    /* 電圧 */
+    // 制御系バッテリー 1
+    left_behind_control_voltage1.b           = 180;
+    left_behind_control_voltage1.led_num_min = 0;
+    left_behind_control_voltage1.led_num_max = 13;
+    // 制御系バッテリー 2
+    left_behind_control_voltage2.b           = 180;
+    left_behind_control_voltage2.led_num_min = 14;
+    left_behind_control_voltage2.led_num_max = 25;
+    // 駆動系バッテリー3
+    left_behind_drive_voltage.g           = 180;
+    left_behind_drive_voltage.led_num_min = 26;
+    left_behind_drive_voltage.led_num_max = 37;
+
+    /* エアー射出 */
+    forword_air.b         = 90;
+    forword_air.g         = 90;
+    forword_air.show_type = ShowType::Spinning;
+
+    /* 自己位置推定 */
+    // あとから実装
 }
 
 /**
