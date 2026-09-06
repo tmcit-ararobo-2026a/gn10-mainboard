@@ -40,6 +40,7 @@ gn10_can::devices::MotorConfig motor_config_loading;
 gn10_can::devices::MotorConfig motor_config_arm_hight;
 gn10_can::devices::power_manager::Config drive_power_manager_config;
 gn10_can::devices::power_manager::Config logic_power_manager_config;
+
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
@@ -58,6 +59,7 @@ gn10_can::devices::ESCHubClient esc_arm_hold_and_loading(fdcan3_bus, 2);
 gn10_can::devices::MotorDriverClient dc_arm_hight(can1_bus, 0);
 gn10_can::devices::PowerManagerClient drive_power_manager(fdcan2_bus, 0);
 gn10_can::devices::PowerManagerClient logic_power_manager(fdcan2_bus, 1);
+gn10_can::devices::LEDClient<LedInfo> led_client(fdcan2_bus, 2);
 
 /* ---------------------------- ethernet --------------------------*/
 // Ethernet
@@ -114,7 +116,7 @@ void update_heartbeat_led()
 }
 
 /**
- * @brief setup関数の中で呼ぶLEDの設定。
+ * @brief setup関数の中で呼ぶLEDの設定
  */
 void led_setup()
 {
@@ -122,28 +124,44 @@ void led_setup()
     right_behind_belt.g           = 180;
     right_behind_belt.led_num_min = 38;
     right_behind_belt.led_num_max = 75;
-
+    led_client.send_display_info(right_behind_belt);
     /* 電圧 */
     // 制御系バッテリー 1
     left_behind_control_voltage1.b           = 180;
     left_behind_control_voltage1.led_num_min = 0;
     left_behind_control_voltage1.led_num_max = 13;
+    led_client.send_display_info(left_behind_control_voltage1);
     // 制御系バッテリー 2
     left_behind_control_voltage2.b           = 180;
     left_behind_control_voltage2.led_num_min = 14;
     left_behind_control_voltage2.led_num_max = 25;
+    led_client.send_display_info(left_behind_control_voltage2);
     // 駆動系バッテリー3
     left_behind_drive_voltage.g           = 180;
     left_behind_drive_voltage.led_num_min = 26;
     left_behind_drive_voltage.led_num_max = 37;
+    led_client.send_display_info(left_behind_drive_voltage);
 
     /* エアー射出 */
     forword_air.b         = 90;
     forword_air.g         = 90;
     forword_air.show_type = ShowType::Spinning;
+    led_client.send_display_info(forword_air);
 
     /* 自己位置推定 */
     // あとから実装
+}
+
+void led_belt(float vesc_velocity, bool init_ok)
+{
+    if (init_ok) {
+        right_behind_belt.set_color(60, 0, 60);
+
+        if (vesc_velocity <= 0.1f) {
+            right_behind_belt.reset_color_setting();
+        } else if (vesc_velocity <= 0.2f) {
+        }
+    }
 }
 
 /**
@@ -310,7 +328,10 @@ void setup()
     // Initialize Ethernet
     ether.init();
 
-    // controller command setup
+    // controller command setup180;
+    left_behind_drive_voltage.led_num_min = 26;
+    left_behind_drive_voltage.led_num_max = 37;
+
     conversion.set_belt_vel_init(0.3f);
     conversion.set_belt_vel_adjust_value(0.005f);
 
@@ -319,6 +340,9 @@ void setup()
 
     conversion.set_wheel_max_vel(4.5f);
     conversion.set_angular_max_vel(4.5f);
+
+    // LED setup
+    led_setup();
 
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
