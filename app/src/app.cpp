@@ -50,7 +50,7 @@ constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
-constexpr uint32_t FEEDBACK_INTERVAL_MS         = 100;
+constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
 /* ---------------------- gn10-can ---------------------- */
@@ -199,6 +199,7 @@ void command_robot_drivers()
 
     // ベルト直動
     if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
+        belt_launcher_controller.set_deinit();
         belt_launcher_client.set_init();
     }
     belt_launcher_controller.update_velocity(
@@ -215,6 +216,7 @@ void command_robot_drivers()
             }
         }
     }
+    led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
 
     // エア射出
     std::array<bool, 8> solenoid_targets{};
@@ -240,7 +242,6 @@ void command_robot_drivers()
 
     // 装填
     if (belt_launcher_controller.load_a_cloth(arm_hold_and_loading_target[2], HAL_GetTick())) {
-        led_info.belt_initialization = true;
     }
 
     // CAN通信
@@ -266,7 +267,6 @@ void receive_and_process_feedbacks()
     }
     float belt_release_point_velocity{};
     if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
-        led_info.belt_initialization = false;
     }
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading.get_feedbacks(loading_feedback.data())) {

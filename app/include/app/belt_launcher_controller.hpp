@@ -87,6 +87,11 @@ public:
         target_velocity_ = std::clamp(target_velocity_, min_velocity_, max_velocity_);
     }
 
+    void set_deinit()
+    {
+        state = State::Uninitialized;
+    }
+
     /**
      * @brief 現在設定されている目標射出速度を取得
      *
@@ -95,6 +100,14 @@ public:
     float get_target_velocity() const
     {
         return target_velocity_;
+    }
+
+    bool get_fire_ready()
+    {
+        if (state == State::ClothLoaded) {
+            return true;
+        }
+        return false;
     }
 
     /**
