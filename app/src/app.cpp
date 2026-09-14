@@ -38,7 +38,7 @@ constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
 // 装填機構
 constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f * RELOAD_ANGLE_ADJUST;
-constexpr uint32_t RELOAD_DELAY_MS  = 2000;
+constexpr uint32_t RELOAD_DELAY_MS  = 1200;
 constexpr float RELOAD_PID_GAINS[3] = {-1.5f, 0.0f, 0.0f};
 // バケツ用アーム
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
