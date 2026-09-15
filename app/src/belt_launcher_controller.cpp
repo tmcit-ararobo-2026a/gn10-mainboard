@@ -14,11 +14,11 @@ void BeltLauncherController::set_initial_point(uint32_t now_ms)
     }
 }
 
-bool BeltLauncherController::fire(float& target_velocity)
+bool BeltLauncherController::fire(float& target_velocity, float voltage)
 {
     // 装填された状態でしか射出しない
     if (state != State::ClothLoaded) return false;
-    target_velocity = target_velocity_;
+    target_velocity = target_velocity_ + voltage_compensation(voltage);
     state           = State::Firing;
     return true;
 }
