@@ -79,11 +79,13 @@ struct feedback_t {
     bool emergency_stop_enabled;
     bool over_current;
     float drive_battery_voltages;
-    float logic_battery_voltages[2];
     float drive_current;
-    // 各アクチュエータ
+    // 記録用
+    float belt_launcher_target_velocity;        // 目標速度[m/s]
+    float last_belt_launcher_release_velocity;  // 射出リリース時の初速[m/s]
+    // 各アクチュエータのフィードバック
     float wheel_angular_velocity[3];  // 0:front 1:left 2:right
-    float belt_launcher_velocity;     // [m/s]
+    float belt_launcher_velocity;     // 現在のベルト直動の速度[m/s]
     float loading_belt_angle;         // 装填機構のプーリー角度[rad]
     float bucket_arm_height;          // バケツアームの高さ[m]
 } __attribute__((__packed__));
