@@ -113,6 +113,7 @@ bool teleop_timeout              = false;
 /* --------------------- PCとの通信 -----------------------------*/
 robot_config::debug_pc_t prev_debug_pc{};
 robot_config::feedback_t robot_feedback{};
+robot_config::feedback_t last_robot_feedback{};
 robot_config::command_t robot_command{};
 
 /* ----------------------- LED --------------------------*/
@@ -407,11 +408,16 @@ void loop()
     if (ether.receive_operation_data(robot_command)) {
     }
 
+    if (!robot_feedback.emergency_stop_enabled && last_robot_feedback.emergency_stop_enabled) {
+        esc_arm_hold_and_loading.set_init(2, motor_config_loading);
+    }
+
     // フィードバック処理
     receive_and_process_feedbacks();
     periodic_feedback();
     read_button_and_send_debug_pc_packet();
-    last_teleop = teleop;
+    last_teleop         = teleop;
+    last_robot_feedback = robot_feedback;
 
     // Basic System Process
     update_heartbeat_led();
