@@ -381,7 +381,7 @@ void setup()
     bucket_arm.set_hold_force_by_current(BUCKET_ARM_HOLD_FORCE);
     bucket_arm.set_release_force_by_current(BUCKET_ARM_RELEASE_FORCE);
 
-    belt_launcher_controller.set_default_velocity(BELT_LAUNCHER_DEFAULT_VELOCITY);
+    belt_launcher_controller.set_velocity(BELT_LAUNCHER_DEFAULT_VELOCITY);
     belt_launcher_controller.set_velocity_adjustment_amount(BELT_LAUNCHER_ADJUSTMENT_VELOCITY);
     belt_launcher_controller.set_reload_delay_ms(RELOAD_DELAY_MS);
     belt_launcher_controller.set_reload_angle_delta(RELOAD_ANGLE_DELTA);

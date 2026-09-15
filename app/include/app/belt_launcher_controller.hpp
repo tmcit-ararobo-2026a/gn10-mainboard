@@ -28,7 +28,7 @@ public:
      *
      * @param velocity 目標射出速度[m/s]
      */
-    void set_default_velocity(float velocity)
+    void set_velocity(float velocity)
     {
         target_velocity_ = std::clamp(velocity, min_velocity_, max_velocity_);
     }
