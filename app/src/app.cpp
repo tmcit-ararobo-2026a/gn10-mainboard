@@ -35,7 +35,7 @@ constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 8.0f;
 constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.0f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
-constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 20.0f;  // [V]
+constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
 constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.4f;   // [m/(s*V)]
 // 装填機構
 constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
