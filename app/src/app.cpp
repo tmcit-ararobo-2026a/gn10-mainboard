@@ -152,6 +152,15 @@ void periodic_feedback()
     }
 }
 
+void packet_led_information_data()
+{
+    led_info.bucket1_angle_yaw_rad     = robot_command.bucket1_angle_yaw_rad;
+    led_info.bucket2_angle_yaw_rad     = robot_command.bucket2_angle_yaw_rad;
+    led_info.bucket3_angle_yaw_rad     = robot_command.bucket3_angle_yaw_rad;
+    led_info.flag_angle_yaw_rad        = robot_command.flag_angle_yaw_rad;
+    led_info.move_bucket_angle_yaw_rad = robot_command.move_bucket_angle_yaw_rad;
+}
+
 /**
  * @brief エンコーダー端子に接続したスイッチを操作することで、PCに電源やプログラム起動の命令を送る
  *
@@ -429,6 +438,7 @@ void loop()
     receive_and_process_feedbacks();
     periodic_feedback();
     read_button_and_send_debug_pc_packet();
+    packet_led_information_data();
     last_teleop = teleop;
 
     // Basic System Process
