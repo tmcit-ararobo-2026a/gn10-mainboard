@@ -92,6 +92,8 @@ ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 /* ----------------------- robot control --------------------------*/
 // 装填・アーム出力値
 std::array<float, 4> arm_hold_and_loading_target{0.0f, 0.0f, 0.0f, 0.0f};
+bool last_emergency_stop_enabled = true;
+bool emergency_stop_enabled      = true;
 
 // ベルト直動
 BeltLauncherController belt_launcher_controller(
@@ -113,7 +115,6 @@ bool teleop_timeout              = false;
 /* --------------------- PCとの通信 -----------------------------*/
 robot_config::debug_pc_t prev_debug_pc{};
 robot_config::feedback_t robot_feedback{};
-robot_config::feedback_t last_robot_feedback{};
 robot_config::command_t robot_command{};
 
 /* ----------------------- LED --------------------------*/
@@ -297,6 +298,7 @@ void receive_and_process_feedbacks()
     if (drive_power_manager.get_new_status(drive_power_status)) {
         robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
         robot_feedback.over_current           = drive_power_status.over_current;
+        emergency_stop_enabled                = drive_power_status.emergency_stop_enabled;
     }
     std::array<float, 4> voltages;
     if (logic_power_manager.get_new_voltages(voltages)) {
@@ -408,16 +410,16 @@ void loop()
     if (ether.receive_operation_data(robot_command)) {
     }
 
-    if (!robot_feedback.emergency_stop_enabled && last_robot_feedback.emergency_stop_enabled) {
-        esc_arm_hold_and_loading.set_init(2, motor_config_loading);
-    }
-
     // フィードバック処理
     receive_and_process_feedbacks();
     periodic_feedback();
     read_button_and_send_debug_pc_packet();
-    last_teleop         = teleop;
-    last_robot_feedback = robot_feedback;
+    last_teleop = teleop;
+
+    // 装填機構のゼロ点は非常停止解除時に取る
+    if (!emergency_stop_enabled && last_emergency_stop_enabled) {
+        esc_arm_hold_and_loading.set_init(2, motor_config_loading);
+    }
 
     // Basic System Process
     update_heartbeat_led();
