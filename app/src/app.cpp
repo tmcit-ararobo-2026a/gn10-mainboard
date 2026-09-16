@@ -213,6 +213,7 @@ void command_robot_drivers()
         if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {  // 射出操作
             if (belt_launcher_controller.fire(belt_launcher_target_vel)) {     // 射出できるかどうか
                 belt_launcher_client.send_fire_command(belt_launcher_target_vel);
+                robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
             }
         }
     }
@@ -267,6 +268,7 @@ void receive_and_process_feedbacks()
     }
     float belt_release_point_velocity{};
     if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
+        robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
     }
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading.get_feedbacks(loading_feedback.data())) {
@@ -299,11 +301,9 @@ void receive_and_process_feedbacks()
     }
     std::array<float, 4> voltages;
     if (logic_power_manager.get_new_voltages(voltages)) {
-        robot_feedback.logic_battery_voltages[0] = voltages[0];
-        robot_feedback.logic_battery_voltages[1] = voltages[1];
+        led_info.battery_voltage[0] = voltages[0];
+        led_info.battery_voltage[1] = voltages[1];
     }
-    led_info.battery_voltage[0] = robot_feedback.logic_battery_voltages[0];
-    led_info.battery_voltage[1] = robot_feedback.logic_battery_voltages[1];
     led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
 }
 
@@ -349,7 +349,7 @@ void setup()
     motor_config_arm_height.set_feedback_cycle(10);
 
     // Other device configuration
-    drive_power_manager_config.sensor_rate_ms            = 100;
+    drive_power_manager_config.sensor_rate_ms            = 30;
     drive_power_manager_config.use_remote_emergency_stop = false;
     logic_power_manager_config.sensor_rate_ms            = 100;
     logic_power_manager_config.use_remote_emergency_stop = false;
