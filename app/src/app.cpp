@@ -35,6 +35,8 @@ constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 8.0f;
 constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.0f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
+constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 20.0f;  // [V]
+constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.4f;   // [m/(s*V)]
 // 装填機構
 constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f * RELOAD_ANGLE_ADJUST;
@@ -211,7 +213,9 @@ void command_robot_drivers()
     // 左下ボタンが押されていない間はベルト直動操作モード
     if (!teleop.buttons.left_down) {
         if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {  // 射出操作
-            if (belt_launcher_controller.fire(belt_launcher_target_vel)) {     // 射出できるかどうか
+            if (belt_launcher_controller.fire(
+                    belt_launcher_target_vel, robot_feedback.drive_battery_voltages
+                )) {  // 射出できるかどうか
                 belt_launcher_client.send_fire_command(belt_launcher_target_vel);
                 robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
             }
@@ -385,6 +389,8 @@ void setup()
     belt_launcher_controller.set_velocity_adjustment_amount(BELT_LAUNCHER_ADJUSTMENT_VELOCITY);
     belt_launcher_controller.set_reload_delay_ms(RELOAD_DELAY_MS);
     belt_launcher_controller.set_reload_angle_delta(RELOAD_ANGLE_DELTA);
+    belt_launcher_controller.set_reference_voltage(BELT_LAUNCHER_REFERENCE_VOLTAGE);
+    belt_launcher_controller.set_voltage_compensation_ratio(BELT_LAUNCHER_COMPENSATION_RATIO);
     // System setup
     heartbeat_last_toggle_time_ms = HAL_GetTick();
 }

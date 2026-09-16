@@ -64,6 +64,26 @@ public:
     }
 
     /**
+     * @brief 電圧変化に伴う速度補正時の基準電圧
+     *
+     * @param voltage 基準電圧[V]
+     */
+    void set_reference_voltage(float voltage)
+    {
+        reference_voltage_ = voltage;
+    }
+
+    /**
+     * @brief 1[V]変化した際に速度を変化させる値
+     *
+     * @param compensation_per_voltage 速度変化値[m/(s*V)]
+     */
+    void set_voltage_compensation_ratio(float compensation_per_voltage)
+    {
+        voltage_compensation_ratio_ = compensation_per_voltage;
+    }
+
+    /**
      * @brief 原点復帰したことを記録
      *
      * @param now_ms 原点復帰した時間[ms]
@@ -114,10 +134,11 @@ public:
      * @brief 射出するか
      *
      * @param target_velocity 目標射出速度[m/s]
+     * @param voltage 電圧[V]
      * @return true 射出して
      * @return false 射出しないで
      */
-    bool fire(float& target_velocity);
+    bool fire(float& target_velocity, float voltage);
 
     /**
      * @brief 装填するか
@@ -133,12 +154,19 @@ public:
     bool load_a_cloth(float& target_angle, uint32_t now_ms);
 
 private:
+    float voltage_compensation(float voltage)
+    {
+        return (reference_voltage_ - voltage) * voltage_compensation_ratio_;
+    }
+
     float max_velocity_{};
     float min_velocity_{};
     float velocity_adjustment_amount_{};
     float target_velocity_{};
     float cloth_loader_target_angle_{};
     float reload_angle_delta_ = (float)M_PI * 2.0f / 3.0f;
+    float reference_voltage_{20.0f};
+    float voltage_compensation_ratio_{0.0f};
     uint32_t reload_delay_ms_{};
     uint32_t last_initial_point_time_ms_{};
     bool wait_for_reload_{};
