@@ -314,6 +314,9 @@ void receive_and_process_feedbacks()
     if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
         robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
         robot_feedback.drive_current          = drive_power_sensor.current;
+        serial_printf(
+            "voltage:%f, current:%f\n", drive_power_sensor.voltage, drive_power_sensor.current
+        );
     }
     std::array<float, 4> voltages;
     if (logic_power_manager.get_new_voltages(voltages)) {
