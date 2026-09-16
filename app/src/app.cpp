@@ -36,7 +36,7 @@ constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.0f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
-constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.4f;   // [m/(s*V)]
+constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.15f;  // [m/(s*V)]
 // 装填機構
 constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f * RELOAD_ANGLE_ADJUST;
@@ -327,7 +327,7 @@ void stop_all_actuators()
 {
     std::array<float, 4> esc_target_zero{};
     esc_wheel.set_targets(esc_target_zero.data());
-    esc_arm_hold_and_loading.set_targets(esc_target_zero.data());
+    // esc_arm_hold_and_loading.set_targets(esc_target_zero.data());
     dc_arm_height.set_target(0.0f);
     std::array<bool, 8> solenoid_target_zero{};
     solenoid.set_target(solenoid_target_zero);
