@@ -94,8 +94,7 @@ ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 /* ----------------------- robot control --------------------------*/
 // 装填・アーム出力値
 std::array<float, 4> arm_hold_and_loading_target{0.0f, 0.0f, 0.0f, 0.0f};
-bool last_emergency_stop_enabled = true;
-bool emergency_stop_enabled      = true;
+bool last_emergency_stop_enabled = false;
 
 // ベルト直動
 BeltLauncherController belt_launcher_controller(
@@ -276,10 +275,26 @@ void receive_and_process_feedbacks()
     if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
         robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
     }
+    gn10_can::devices::power_manager::Status drive_power_status{};
+    if (drive_power_manager.get_new_status(drive_power_status)) {
+        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
+        robot_feedback.over_current           = drive_power_status.over_current;
+    }
+
+    if (last_emergency_stop_enabled && !robot_feedback.emergency_stop_enabled) {
+        belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+    }
+    last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
+
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading.get_feedbacks(loading_feedback.data())) {
         robot_feedback.loading_belt_angle = loading_feedback[2];
+        // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
+        if (robot_feedback.emergency_stop_enabled) {
+            belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+        }
     }
+
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
     bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
     // ゼロ点合わせが済んだらエンコーダーの値から高さを計算してフィードバックに代入
@@ -299,12 +314,6 @@ void receive_and_process_feedbacks()
     if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
         robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
         robot_feedback.drive_current          = drive_power_sensor.current;
-    }
-    gn10_can::devices::power_manager::Status drive_power_status{};
-    if (drive_power_manager.get_new_status(drive_power_status)) {
-        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
-        robot_feedback.over_current           = drive_power_status.over_current;
-        emergency_stop_enabled                = drive_power_status.emergency_stop_enabled;
     }
     std::array<float, 4> voltages;
     if (logic_power_manager.get_new_voltages(voltages)) {
@@ -421,11 +430,6 @@ void loop()
     periodic_feedback();
     read_button_and_send_debug_pc_packet();
     last_teleop = teleop;
-
-    // 装填機構のゼロ点は非常停止解除時に取る
-    if (!emergency_stop_enabled && last_emergency_stop_enabled) {
-        esc_arm_hold_and_loading.set_init(2, motor_config_loading);
-    }
 
     // Basic System Process
     update_heartbeat_led();

@@ -90,6 +90,11 @@ public:
      */
     void set_initial_point(uint32_t now_ms);
 
+    void set_reload_angle(float angle)
+    {
+        cloth_loader_target_angle_ = angle;
+    }
+
     /**
      * @brief 速度調整
      *

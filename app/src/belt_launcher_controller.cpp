@@ -26,7 +26,10 @@ bool BeltLauncherController::fire(float& target_velocity, float voltage)
 bool BeltLauncherController::load_a_cloth(float& target_angle, uint32_t now_ms)
 {
     // 再装填待ちでなければ装填しない
-    if (!wait_for_reload_) return false;
+    if (!wait_for_reload_) {
+        target_angle = cloth_loader_target_angle_;
+        return false;
+    };
     if (state == State::InitialPoint) {
         // 以前ゼロ点に戻ってきたタイミングから遅れ分経ったら装填
         if (now_ms - last_initial_point_time_ms_ >= reload_delay_ms_) {
