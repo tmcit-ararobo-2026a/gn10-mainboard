@@ -152,6 +152,15 @@ void periodic_feedback()
     }
 }
 
+void packet_led_information_data()
+{
+    led_info.bucket1_angle_yaw_rad     = robot_command.bucket1_angle_yaw_rad;
+    led_info.bucket2_angle_yaw_rad     = robot_command.bucket2_angle_yaw_rad;
+    led_info.bucket3_angle_yaw_rad     = robot_command.bucket3_angle_yaw_rad;
+    led_info.flag_angle_yaw_rad        = robot_command.flag_angle_yaw_rad;
+    led_info.move_bucket_angle_yaw_rad = robot_command.move_bucket_angle_yaw_rad;
+}
+
 /**
  * @brief エンコーダー端子に接続したスイッチを操作することで、PCに電源やプログラム起動の命令を送る
  *
@@ -425,6 +434,7 @@ void loop()
     if (ether.receive_operation_data(robot_command)) {
     }
 
+    packet_led_information_data();
     // フィードバック処理
     receive_and_process_feedbacks();
     periodic_feedback();
