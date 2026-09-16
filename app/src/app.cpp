@@ -434,11 +434,11 @@ void loop()
     if (ether.receive_operation_data(robot_command)) {
     }
 
+    packet_led_information_data();
     // フィードバック処理
     receive_and_process_feedbacks();
     periodic_feedback();
     read_button_and_send_debug_pc_packet();
-    packet_led_information_data();
     last_teleop = teleop;
 
     // Basic System Process
