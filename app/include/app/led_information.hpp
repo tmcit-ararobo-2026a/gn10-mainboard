@@ -14,4 +14,5 @@ struct LEDInformation {
     float bucket3_angle_yaw_rad{};      // ロボット座標系におけるバケツ3の水平角[rad]
     float flag_angle_yaw_rad{};         // ロボット座標系における旗の水平角[rad]
     float move_bucket_angle_yaw_rad{};  // ロボット座標系における移動バケツの水平角[rad]
+
 } __attribute__((__packed__));
