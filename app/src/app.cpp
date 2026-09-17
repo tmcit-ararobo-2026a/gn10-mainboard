@@ -352,6 +352,7 @@ void setup()
     HAL_Delay(ETHER_INIT_DELAY_MS);
 
     // CAN initialization
+    fdcan3_driver.set_tx_timeout(2);
     can1_driver.init();
     fdcan2_driver.init();
     fdcan3_driver.init();
