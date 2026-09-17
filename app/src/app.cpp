@@ -455,6 +455,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     (void)RxFifo0ITs;
     if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO0)) return;
     if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO0)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO0)) return;
 }
 
 /**
@@ -463,6 +464,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs)
 {
     (void)RxFifo1ITs;
+    if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO1)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO1)) return;
     if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO1)) return;
 }
 }
