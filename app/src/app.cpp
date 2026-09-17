@@ -67,7 +67,7 @@ gn10_can::devices::power_manager::Config logic_power_manager_config;
 // CAN Drivers
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::drivers::FDCANDriver fdcan2_driver(&hfdcan2);
-gn10_can::drivers::FDCANDriver fdcan3_driver(&hfdcan3, FDCAN_RX_FIFO1);
+gn10_can::drivers::FDCANDriver fdcan3_driver(&hfdcan3);
 // CAN Bus
 gn10_can::CANBus can1_bus(can1_driver);
 gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
