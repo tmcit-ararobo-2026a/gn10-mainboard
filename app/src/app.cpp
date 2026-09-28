@@ -55,6 +55,7 @@ constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
+constexpr uint32_t COMMAND_TIMEOUT_MS           = 100;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::MotorConfig motor_config_wheel;
@@ -117,6 +118,8 @@ bool teleop_timeout              = false;
 robot_config::debug_pc_t prev_debug_pc{};
 robot_config::feedback_t robot_feedback{};
 robot_config::command_t robot_command{};
+uint32_t last_command_received_ms = 0;
+bool command_timeout              = false;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -433,6 +436,10 @@ void loop()
         stop_all_actuators();
     }
     if (ether.receive_operation_data(robot_command)) {
+        command_timeout          = false;
+        last_command_received_ms = now_ms;
+    } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
+        command_timeout = true;
     }
 
     packet_led_information_data();
