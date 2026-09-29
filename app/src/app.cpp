@@ -435,7 +435,7 @@ void loop()
         teleop_timeout = true;
         stop_all_actuators();
     }
-    if (ether.receive_operation_data(robot_command)) {
+    if (ether.receive_command_data(robot_command)) {
         command_timeout          = false;
         last_command_received_ms = now_ms;
     } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
