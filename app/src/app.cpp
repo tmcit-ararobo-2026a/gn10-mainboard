@@ -109,8 +109,7 @@ BucketArmController bucket_arm(
 );
 
 // 自動制御
-bool navigation_enabled                 = false;  // 自律移動
-bool belt_launcher_autocontroll_enabled = false;  // ベルト直動式射出機構の自動制御
+bool navigation_enabled = false;  // 自律移動
 
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
@@ -445,8 +444,7 @@ void loop()
     } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
         command_timeout = true;
         // 自律制御部分を無効化してコントローラーによる制御に移行
-        navigation_enabled                 = false;
-        belt_launcher_autocontroll_enabled = false;
+        navigation_enabled = false;
     }
 
     packet_led_information_data();
