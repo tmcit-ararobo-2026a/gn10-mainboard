@@ -197,16 +197,24 @@ void read_button_and_send_debug_pc_packet()
  */
 void command_robot_drivers()
 {
+    float x_vel, y_vel, angular_vel;
     // 足回り
-    float x_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    float y_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    float angular_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
-        ANGULAR_VELOCITY_MAX;
+    if (navigation_enabled) {
+        x_vel       = robot_command.vel_x;
+        y_vel       = robot_command.vel_y;
+        angular_vel = robot_command.vel_yaw;
+    } else {
+        x_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        y_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        angular_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
+            ANGULAR_VELOCITY_MAX;
+    }
+
     omni.convert(-x_vel, y_vel, angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
