@@ -22,6 +22,16 @@ public:
     }
 
     /**
+     * @brief 左右移動の速度比率設定
+     *
+     * @param velocity_ratio
+     */
+    void set_width_adjustment_velocity_ratio(float velocity_ratio)
+    {
+        width_adjustment_velocity_ratio_ = velocity_ratio;
+    }
+
+    /**
      * @brief ハンドで雑巾を保持する際の出力値設定
      *
      * @param output_current モーターに流す電流で、保持力に比例する[A](正の値)
@@ -87,6 +97,15 @@ public:
     float height_motor_output(bool up, bool down) const;
 
     /**
+     * @brief
+     *
+     * @param left 左移動
+     * @param right 幹移動
+     * @return float 左右の移動調節モーターの出力[ratio]
+     */
+    float width_motor_output(bool left, bool right) const;
+
+    /**
      * @brief ハンド保持用モーターの出力を計算
      *
      * @param hold 保持するかどうか
@@ -99,6 +118,7 @@ private:
     float height_max_{};
     float height_min_{};
     float height_adjustment_velocity_ratio_{};
+    float width_adjustment_velocity_ratio_{};
     float hold_current_{};
     float release_current_{};
     float height_motor_angle_{};

@@ -19,6 +19,17 @@ float BucketArmController::height_motor_output(bool up, bool down) const
     return 0.0f;
 }
 
+float BucketArmController::width_motor_output(bool left, bool right) const
+{
+    if (left == right) {
+        return 0.0f;
+    }
+    if (left) {
+    }
+    if (right) {
+    }
+}
+
 float BucketArmController::hold_motor_output(bool hold) const
 {
     if (hold) {
