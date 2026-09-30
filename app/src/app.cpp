@@ -108,6 +108,10 @@ BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS, BUCKET_ARM_HEIGHT_MAX, BUCKET_ARM_HEIGHT_MIN
 );
 
+// 自動制御
+bool navigation_enabled                 = false;  // 自律移動
+bool belt_launcher_autocontroll_enabled = false;  // ベルト直動式射出機構の自動制御
+
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
 robot_config::teleop_t last_teleop{};
@@ -440,6 +444,9 @@ void loop()
         last_command_received_ms = now_ms;
     } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
         command_timeout = true;
+        // 自律制御部分を無効化してコントローラーによる制御に移行
+        navigation_enabled                 = false;
+        belt_launcher_autocontroll_enabled = false;
     }
 
     packet_led_information_data();
