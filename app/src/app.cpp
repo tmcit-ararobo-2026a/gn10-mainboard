@@ -55,6 +55,7 @@ constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
+constexpr uint32_t COMMAND_TIMEOUT_MS           = 100;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::MotorConfig motor_config_wheel;
@@ -107,6 +108,9 @@ BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS, BUCKET_ARM_HEIGHT_MAX, BUCKET_ARM_HEIGHT_MIN
 );
 
+// 自動制御
+bool navigation_enabled = false;  // 自律移動
+
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
 robot_config::teleop_t last_teleop{};
@@ -117,6 +121,8 @@ bool teleop_timeout              = false;
 robot_config::debug_pc_t prev_debug_pc{};
 robot_config::feedback_t robot_feedback{};
 robot_config::command_t robot_command{};
+uint32_t last_command_received_ms = 0;
+bool command_timeout              = false;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -191,16 +197,24 @@ void read_button_and_send_debug_pc_packet()
  */
 void command_robot_drivers()
 {
+    float x_vel, y_vel, angular_vel;
     // 足回り
-    float x_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    float y_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    float angular_vel =
-        std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
-        ANGULAR_VELOCITY_MAX;
+    if (navigation_enabled) {
+        x_vel       = robot_command.vel_x;
+        y_vel       = robot_command.vel_y;
+        angular_vel = robot_command.vel_yaw;
+    } else {
+        x_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        y_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        angular_vel =
+            std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
+            ANGULAR_VELOCITY_MAX;
+    }
+
     omni.convert(-x_vel, y_vel, angular_vel, 0.0f);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
@@ -214,10 +228,15 @@ void command_robot_drivers()
         belt_launcher_controller.set_deinit();
         belt_launcher_client.set_init();
     }
-    belt_launcher_controller.update_velocity(
-        teleop.buttons.right_up && !last_teleop.buttons.right_up,
-        teleop.buttons.right_down && !last_teleop.buttons.right_down
-    );
+    if (!teleop.buttons.left_down) {
+        belt_launcher_controller.update_velocity(
+            teleop.buttons.right_up && !last_teleop.buttons.right_up,
+            teleop.buttons.right_down && !last_teleop.buttons.right_down
+        );
+    }
+    if (navigation_enabled && robot_command.belt_launcher_ready) {
+        belt_launcher_controller.set_velocity(robot_command.belt_launcher_speed);
+    }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
     float belt_launcher_target_vel{};
     // 左下ボタンが押されていない間はベルト直動操作モード
@@ -432,7 +451,19 @@ void loop()
         teleop_timeout = true;
         stop_all_actuators();
     }
-    if (ether.receive_operation_data(robot_command)) {
+    if (ether.receive_command_data(robot_command)) {
+        command_timeout          = false;
+        last_command_received_ms = now_ms;
+    } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
+        command_timeout = true;
+        // 自律制御部分を無効化してコントローラーによる制御に移行
+        navigation_enabled = false;
+    }
+
+    if (navigation_enabled) {
+        if (teleop.buttons.stick_push_left && !last_teleop.buttons.stick_push_left) {
+            navigation_enabled = !navigation_enabled;
+        }
     }
 
     packet_led_information_data();

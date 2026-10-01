@@ -72,7 +72,7 @@ bool RobotEthernet::init()
     return true;
 }
 
-bool RobotEthernet::receive_operation_data(robot_config::command_t& data)
+bool RobotEthernet::receive_command_data(robot_config::command_t& data)
 {
     robot_config::command_u rx_data;
     uint8_t source_address[4];
