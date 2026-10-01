@@ -228,10 +228,15 @@ void command_robot_drivers()
         belt_launcher_controller.set_deinit();
         belt_launcher_client.set_init();
     }
-    belt_launcher_controller.update_velocity(
-        teleop.buttons.right_up && !last_teleop.buttons.right_up,
-        teleop.buttons.right_down && !last_teleop.buttons.right_down
-    );
+    if (!teleop.buttons.left_down) {
+        belt_launcher_controller.update_velocity(
+            teleop.buttons.right_up && !last_teleop.buttons.right_up,
+            teleop.buttons.right_down && !last_teleop.buttons.right_down
+        );
+    }
+    if (navigation_enabled && robot_command.belt_launcher_ready) {
+        belt_launcher_controller.set_velocity(robot_command.belt_launcher_speed);
+    }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
     float belt_launcher_target_vel{};
     // 左下ボタンが押されていない間はベルト直動操作モード
