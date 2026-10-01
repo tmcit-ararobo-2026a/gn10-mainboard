@@ -460,6 +460,12 @@ void loop()
         navigation_enabled = false;
     }
 
+    if (navigation_enabled) {
+        if (teleop.buttons.stick_push_left && !last_teleop.buttons.stick_push_left) {
+            navigation_enabled = !navigation_enabled;
+        }
+    }
+
     packet_led_information_data();
     // フィードバック処理
     receive_and_process_feedbacks();
