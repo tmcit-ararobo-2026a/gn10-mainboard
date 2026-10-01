@@ -46,6 +46,9 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.5f, 0.0f, 0.0f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
+constexpr float BUCKET_ARM_WIDTH_PULLEY_RADIUS  = 0.0f;    // [m]
+constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]
+constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // 機械定数
@@ -104,7 +107,12 @@ BeltLauncherController belt_launcher_controller(
 // バケツアーム
 bool dc_arm_height_encoder_initialized = false;
 BucketArmController bucket_arm(
-    BUCKET_ARM_HEIGHT_PULLEY_RADIUS, BUCKET_ARM_HEIGHT_MAX, BUCKET_ARM_HEIGHT_MIN
+    BUCKET_ARM_HEIGHT_PULLEY_RADIUS,
+    BUCKET_ARM_HEIGHT_MAX,
+    BUCKET_ARM_HEIGHT_MIN,
+    BUCKET_ARM_WIDTH_PULLEY_RADIUS,
+    BUCKET_ARM_WIDTH_MAX,
+    BUCKET_ARM_WIDTH_MIN
 );
 
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
@@ -247,6 +255,7 @@ void command_robot_drivers()
 
     // バケツ用アーム
     float arm_height_target = 0.0f;
+    float arm_width_target  = 0.0f;
     if (teleop.buttons.left_down) {
         arm_height_target =
             bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
@@ -254,8 +263,9 @@ void command_robot_drivers()
     } else {
         arm_hold_and_loading_target[1] = 0.0f;
     }
+    // 横のバケツアーム書く↓
 
-    // 装填
+    //  装填
     if (belt_launcher_controller.load_a_cloth(arm_hold_and_loading_target[2], HAL_GetTick())) {
     }
 
