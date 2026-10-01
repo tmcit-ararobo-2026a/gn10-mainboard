@@ -65,6 +65,7 @@ gn10_can::devices::MotorConfig motor_config_hand;
 gn10_can::devices::MotorConfig motor_config_belt;
 gn10_can::devices::MotorConfig motor_config_loading;
 gn10_can::devices::MotorConfig motor_config_arm_height;
+gn10_can::devices::MotorConfig motor_config_arm_width;
 gn10_can::devices::power_manager::Config drive_power_manager_config;
 gn10_can::devices::power_manager::Config logic_power_manager_config;
 // CAN Drivers
@@ -80,7 +81,7 @@ gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
 gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
     robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
-gn10_can::devices::ESCHubClient esc_arm_hold_and_loading(fdcan3_bus, 2);
+gn10_can::devices::ESCHubClient esc_arm_hold_and_loading_and_width(fdcan3_bus, 2);
 gn10_can::devices::MotorDriverClient dc_arm_height(can1_bus, 0);
 gn10_can::devices::PowerManagerClient drive_power_manager(fdcan2_bus, 0);
 gn10_can::devices::PowerManagerClient logic_power_manager(fdcan2_bus, 1);
@@ -264,13 +265,18 @@ void command_robot_drivers()
         arm_hold_and_loading_target[1] = 0.0f;
     }
     // 横のバケツアーム書く↓
-
+    if () {
+        arm_width_target    = bucket_arm.width_motor_output();
+        arm_width_target[3] = bucket_arm.width_motor_output();
+    } else {
+        arm_width_target[3] = 0.0f;
+    }
     //  装填
     if (belt_launcher_controller.load_a_cloth(arm_hold_and_loading_target[2], HAL_GetTick())) {
     }
 
     // CAN通信
-    esc_arm_hold_and_loading.set_targets(arm_hold_and_loading_target.data());
+    esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_target.data());
     dc_arm_height.set_target(arm_height_target);
 }
 
@@ -306,7 +312,7 @@ void receive_and_process_feedbacks()
     last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
 
     std::array<float, 4> loading_feedback = {};
-    if (esc_arm_hold_and_loading.get_feedbacks(loading_feedback.data())) {
+    if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
         robot_feedback.loading_belt_angle = loading_feedback[2];
         // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
         if (robot_feedback.emergency_stop_enabled) {
@@ -384,6 +390,10 @@ void setup()
     motor_config_arm_height.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
     motor_config_arm_height.set_feedback_cycle(10);
 
+    motor_config_arm_width.set_max_duty_ratio(0.75f);
+    motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
+    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+
     // Other device configuration
     drive_power_manager_config.sensor_rate_ms            = 30;
     drive_power_manager_config.use_remote_emergency_stop = false;
@@ -395,15 +405,18 @@ void setup()
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, WHEEL_PID_GAINS[0], WHEEL_PID_GAINS[1], WHEEL_PID_GAINS[2], 0.0f);
     }
-    esc_arm_hold_and_loading.set_init(1, motor_config_hand);
+    esc_arm_hold_and_loading_and_width.set_init(1, motor_config_hand);
 
     motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
     motor_config_loading.set_max_duty_ratio(10.0f);
-    esc_arm_hold_and_loading.set_init(2, motor_config_loading);
-    esc_arm_hold_and_loading.set_gains(
+    esc_arm_hold_and_loading_and_width.set_init(2, motor_config_loading);
+    esc_arm_hold_and_loading_and_width.set_gains(
         2, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
     );
+
+    esc_arm_hold_and_loading_and_width.set_init(3, motor_config_arm_width);
+    esc_arm_hold_and_loading_and_width.set_gains(3, 0, 0, 0, 0.0f);  // 位置制御用PIDゲイン
 
     dc_arm_height.set_init(motor_config_arm_height);
     solenoid.set_init();
