@@ -103,19 +103,6 @@ union feedback_u {
 static_assert(sizeof(feedback_t) == 44);
 
 /**
- * @brief 操縦デバイスのレバーの傾きと押し込み
- *
- */
-enum class LeverPosition : uint8_t {
-    FRONT,
-    RIGHT,
-    RIGHT_DEEP,
-    LEFT,
-    LEFT_DEEP,
-    PUSH,
-};
-
-/**
  * @brief ロボットの操縦信号値
  *
  */
@@ -128,18 +115,22 @@ struct teleop_t {
     } __attribute__((__packed__)) analog;  // 4byte
 
     struct {
-        LeverPosition lever_right : 3;
-        LeverPosition lever_left  : 3;
-        uint8_t stick_push_right  : 1;
-        uint8_t stick_push_left   : 1;
-        uint8_t left_up           : 1;
-        uint8_t left_down         : 1;
-        uint8_t left_right        : 1;
-        uint8_t left_left         : 1;
-        uint8_t right_right       : 1;
-        uint8_t right_up          : 1;
-        uint8_t right_down        : 1;
-        uint8_t reserved          : 1;
+        uint8_t stick_push_right : 1;  // 右スティック押し込み
+        uint8_t stick_push_left  : 1;  // 左スティック押し込み
+        uint8_t left_up          : 1;  // 左十字キーの上ボタン
+        uint8_t left_down        : 1;  // 左十字キーの下ボタン
+        uint8_t left_right       : 1;  // 左十字キーの右ボタン
+        uint8_t left_left        : 1;  // 左十字キーの左ボタン
+        uint8_t right_up         : 1;  // 右十字キーの上ボタン
+        uint8_t right_down       : 1;  // 右十字キーの下ボタン
+        uint8_t right_right      : 1;  // 右十字キーの右ボタン
+        uint8_t right_left       : 1;  // 右十字キーの左ボタン
+        uint8_t left_trigger     : 1;  // 左のトリガボタン（旧レバー）
+        uint8_t right_trigger    : 1;  // 右のトリガボタン（旧レバー）
+        uint8_t left_toggle_sw   : 1;  // 左モード指定用トグルスイッチ（上に倒すと:1）
+        uint8_t right_toggle_sw  : 1;  // 左モード指定用トグルスイッチ（上に倒すと:1）
+        uint8_t reserved_1       : 1;
+        uint8_t reserved_2       : 1;
     } __attribute__((__packed__)) buttons;  // 2byte
 
     /**
