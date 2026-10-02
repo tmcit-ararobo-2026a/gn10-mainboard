@@ -51,6 +51,7 @@ constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]
 constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
+constexpr float BUCKET_PID_GAINS[3]             = {1.0f, 0.0f, 0.0f};
 // 機械定数
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
@@ -97,7 +98,7 @@ ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 
 /* ----------------------- robot control --------------------------*/
 // 装填・アーム出力値
-std::array<float, 4> arm_hold_and_loading_target{0.0f, 0.0f, 0.0f, 0.0f};
+std::array<float, 4> arm_hold_and_loading_and_width_target{0.0f, 0.0f, 0.0f, 0.0f};
 bool last_emergency_stop_enabled = false;
 
 // ベルト直動
@@ -260,23 +261,25 @@ void command_robot_drivers()
     if (teleop.buttons.left_down) {
         arm_height_target =
             bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
-        arm_hold_and_loading_target[1] = bucket_arm.hold_motor_output(teleop.buttons.right_right);
+        arm_hold_and_loading_and_width_target[1] =
+            bucket_arm.hold_motor_output(teleop.buttons.right_right);
     } else {
-        arm_hold_and_loading_target[1] = 0.0f;
+        arm_hold_and_loading_and_width_target[1] = 0.0f;
     }
     // 横のバケツアーム書く↓
     if () {
-        arm_width_target    = bucket_arm.width_motor_output();
-        arm_width_target[3] = bucket_arm.width_motor_output();
+        arm_hold_and_loading_and_width_target[3] = bucket_arm.width_motor_output();
     } else {
-        arm_width_target[3] = 0.0f;
+        arm_hold_and_loading_and_width_target[3] = 0.0f;
     }
     //  装填
-    if (belt_launcher_controller.load_a_cloth(arm_hold_and_loading_target[2], HAL_GetTick())) {
+    if (belt_launcher_controller.load_a_cloth(
+            arm_hold_and_loading_and_width_target[2], HAL_GetTick()
+        )) {
     }
 
     // CAN通信
-    esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_target.data());
+    esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data());
     dc_arm_height.set_target(arm_height_target);
 }
 
@@ -318,6 +321,7 @@ void receive_and_process_feedbacks()
         if (robot_feedback.emergency_stop_enabled) {
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
+        bucket_arm.set_width_motor_angle(loading_feedback[3]);
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
@@ -416,7 +420,9 @@ void setup()
     );
 
     esc_arm_hold_and_loading_and_width.set_init(3, motor_config_arm_width);
-    esc_arm_hold_and_loading_and_width.set_gains(3, 0, 0, 0, 0.0f);  // 位置制御用PIDゲイン
+    esc_arm_hold_and_loading_and_width.set_gains(
+        3, BUCKET_PID_GAINS[0], BUCKET_PID_GAINS[1], BUCKET_PID_GAINS[2], 0.0f
+    );  // 位置制御用PIDゲイン
 
     dc_arm_height.set_init(motor_config_arm_height);
     solenoid.set_init();
@@ -427,6 +433,7 @@ void setup()
     ether.init();
 
     bucket_arm.set_height_adjustment_velocity_ratio(1.0f);
+    bucket_arm.set_width_adjustment_velocity_ratio(1.0f);
     bucket_arm.set_hold_force_by_current(BUCKET_ARM_HOLD_FORCE);
     bucket_arm.set_release_force_by_current(BUCKET_ARM_RELEASE_FORCE);
 
