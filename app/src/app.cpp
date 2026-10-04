@@ -108,6 +108,8 @@ BeltLauncherController belt_launcher_controller(
 
 // バケツアーム
 bool dc_arm_height_encoder_initialized = false;
+float bucket_arm_width_move            = BUCKET_ARM_WIDTH_MIN;
+float bucket_arm_width_now;
 BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS,
     BUCKET_ARM_HEIGHT_MAX,
@@ -257,7 +259,6 @@ void command_robot_drivers()
 
     // バケツ用アーム
     float arm_height_target = 0.0f;
-    float arm_width_target  = 0.0f;
     if (teleop.buttons.left_down) {
         arm_height_target =
             bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
@@ -268,9 +269,7 @@ void command_robot_drivers()
     }
     // 横のバケツアーム書く↓
     if () {
-        arm_hold_and_loading_and_width_target[3] = bucket_arm.width_motor_output();
-    } else {
-        arm_hold_and_loading_and_width_target[3] = 0.0f;
+        arm_hold_and_loading_and_width_target[3] = bucket_arm.width_to_angle(bucket_arm_width_move);
     }
     //  装填
     if (belt_launcher_controller.load_a_cloth(
@@ -322,6 +321,7 @@ void receive_and_process_feedbacks()
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
         bucket_arm.set_width_motor_angle(loading_feedback[3]);
+        bucket_arm_width_now = loading_feedback[3];
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
@@ -418,6 +418,10 @@ void setup()
     esc_arm_hold_and_loading_and_width.set_gains(
         2, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
     );
+
+    // バケツの横軸
+    motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
+    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
     esc_arm_hold_and_loading_and_width.set_init(3, motor_config_arm_width);
     esc_arm_hold_and_loading_and_width.set_gains(
