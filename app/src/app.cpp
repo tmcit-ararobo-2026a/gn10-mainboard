@@ -59,7 +59,7 @@ constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
-constexpr uint32_t COMMAND_TIMEOUT_MS           = 100;
+constexpr uint32_t OPERATION_TIMEOUT_MS         = 100;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::MotorConfig motor_config_wheel;
@@ -128,11 +128,11 @@ uint32_t last_teleop_received_ms = 0;
 bool teleop_timeout              = false;
 
 /* --------------------- PCとの通信 -----------------------------*/
-robot_config::debug_pc_t prev_debug_pc{};
-robot_config::feedback_t robot_feedback{};
 robot_config::command_t robot_command{};
-uint32_t last_command_received_ms = 0;
-bool command_timeout              = false;
+robot_config::operation_t robot_operation{};
+robot_config::feedback_t robot_feedback{};
+uint32_t last_operation_received_ms = 0;
+bool operation_timeout              = false;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -170,36 +170,11 @@ void periodic_feedback()
 
 void packet_led_information_data()
 {
-    led_info.bucket1_angle_yaw_rad     = robot_command.bucket1_angle_yaw_rad;
-    led_info.bucket2_angle_yaw_rad     = robot_command.bucket2_angle_yaw_rad;
-    led_info.bucket3_angle_yaw_rad     = robot_command.bucket3_angle_yaw_rad;
-    led_info.flag_angle_yaw_rad        = robot_command.flag_angle_yaw_rad;
-    led_info.move_bucket_angle_yaw_rad = robot_command.move_bucket_angle_yaw_rad;
-}
-
-/**
- * @brief エンコーダー端子に接続したスイッチを操作することで、PCに電源やプログラム起動の命令を送る
- *
- */
-void read_button_and_send_debug_pc_packet()
-{
-    // ボタンが押されたら送る処理
-    robot_config::debug_pc_t current_debug_pc = {};
-    current_debug_pc.jetson_restart =
-        (HAL_GPIO_ReadPin(operation_button1_GPIO_Port, operation_button1_Pin) == GPIO_PIN_SET);
-    current_debug_pc.jetson_shutdown =
-        (HAL_GPIO_ReadPin(operation_button2_GPIO_Port, operation_button2_Pin) == GPIO_PIN_SET);
-    current_debug_pc.node_start =
-        (HAL_GPIO_ReadPin(operation_button3_GPIO_Port, operation_button3_Pin) == GPIO_PIN_SET);
-    current_debug_pc.node_stop =
-        (HAL_GPIO_ReadPin(operation_button4_GPIO_Port, operation_button4_Pin) == GPIO_PIN_SET);
-    if (current_debug_pc.jetson_restart != prev_debug_pc.jetson_restart ||
-        current_debug_pc.jetson_shutdown != prev_debug_pc.jetson_shutdown ||
-        current_debug_pc.node_start != prev_debug_pc.node_start ||
-        current_debug_pc.node_stop != prev_debug_pc.node_stop) {
-        ether.send_pc_debug_data(current_debug_pc);
-        prev_debug_pc = current_debug_pc;
-    }
+    led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
+    led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
+    led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
+    led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
+    led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
 }
 
 /**
@@ -210,9 +185,9 @@ void command_robot_drivers()
     float x_vel, y_vel, angular_vel;
     // 足回り
     if (navigation_enabled) {
-        x_vel       = robot_command.vel_x;
-        y_vel       = robot_command.vel_y;
-        angular_vel = robot_command.vel_yaw;
+        x_vel       = robot_operation.vel_x;
+        y_vel       = robot_operation.vel_y;
+        angular_vel = robot_operation.vel_yaw;
     } else {
         x_vel =
             std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
@@ -244,8 +219,11 @@ void command_robot_drivers()
             teleop.buttons.right_down && !last_teleop.buttons.right_down
         );
     }
-    if (navigation_enabled && robot_command.belt_launcher_ready) {
-        belt_launcher_controller.set_velocity(robot_command.belt_launcher_speed);
+    if (navigation_enabled &&
+        (robot_operation.navigation_status == robot_config::NavigationStatus::ReachedTheGoal ||
+         robot_operation.navigation_status ==
+             robot_config::NavigationStatus::TrackingMovingBucket)) {
+        belt_launcher_controller.set_velocity(robot_operation.belt_launcher_speed);
     }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
     float belt_launcher_target_vel{};
@@ -480,26 +458,20 @@ void loop()
         teleop_timeout = true;
         stop_all_actuators();
     }
-    if (ether.receive_command_data(robot_command)) {
-        command_timeout          = false;
-        last_command_received_ms = now_ms;
-    } else if ((now_ms - last_command_received_ms) > COMMAND_TIMEOUT_MS && !command_timeout) {
-        command_timeout = true;
+    if (ether.receive_operation_data(robot_operation)) {
+        operation_timeout          = false;
+        last_operation_received_ms = now_ms;
+    } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS && !operation_timeout) {
+        operation_timeout = true;
         // 自律制御部分を無効化してコントローラーによる制御に移行
-        navigation_enabled = false;
-    }
-
-    if (navigation_enabled) {
-        if (teleop.buttons.stick_push_left && !last_teleop.buttons.stick_push_left) {
-            navigation_enabled = !navigation_enabled;
-        }
+        navigation_enabled              = false;
+        robot_command.navigation_status = robot_config::NavigationStatus::Stanby;
     }
 
     packet_led_information_data();
     // フィードバック処理
     receive_and_process_feedbacks();
     periodic_feedback();
-    read_button_and_send_debug_pc_packet();
     last_teleop = teleop;
 
     // Basic System Process
