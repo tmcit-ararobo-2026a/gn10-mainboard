@@ -46,9 +46,9 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.5f, 0.0f, 0.0f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
-constexpr float BUCKET_ARM_WIDTH_PULLEY_RADIUS  = 0.0f;    // [m]
-constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]
-constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]
+constexpr float BUCKET_ARM_WIDTH_PULLEY_RADIUS  = 0.0f;    // [m]（記入なし）
+constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]（記入なし）
+constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]（記入なし）
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 constexpr float BUCKET_PID_GAINS[3]             = {1.0f, 0.0f, 0.0f};
@@ -109,8 +109,6 @@ BeltLauncherController belt_launcher_controller(
 
 // バケツアーム
 bool dc_arm_height_encoder_initialized = false;
-float bucket_arm_width_move            = BUCKET_ARM_WIDTH_MIN;
-float bucket_arm_width_now;
 BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS,
     BUCKET_ARM_HEIGHT_MAX,
@@ -287,9 +285,7 @@ void command_robot_drivers()
         arm_hold_and_loading_and_width_target[1] = 0.0f;
     }
     // 横のバケツアーム書く↓
-    if () {
-        arm_hold_and_loading_and_width_target[3] = bucket_arm.width_to_angle(bucket_arm_width_move);
-    }
+
     //  装填
     if (belt_launcher_controller.load_a_cloth(
             arm_hold_and_loading_and_width_target[2], HAL_GetTick()
@@ -340,7 +336,6 @@ void receive_and_process_feedbacks()
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
         bucket_arm.set_width_motor_angle(loading_feedback[3]);
-        bucket_arm_width_now = loading_feedback[3];
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
