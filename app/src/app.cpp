@@ -20,17 +20,19 @@ gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 gn10_can::drivers::CANDriver can1_driver(&hfdcan1);
 gn10_can::CANBus can1_bus(can1_driver);
 
-gn10_can::devices::SolenoidDriverClient trinity_device(can1_bus, 0);
 // led
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
 uint32_t heartbeat_last_toggle_time_ms          = 0;
 
-//
+// esc-hub
 gn10_can::devices::LauncherClient belt_launcher_client(fdcan3_bus, 0);
 
 // htmd
-gn10_can::devices::MotorDriverClient motor_client(can1_bus, 0);
+gn10_can::devices::MotorDriverClient motor_client(can1_bus, 1);
 gn10_can::devices::MotorConfig motor_config;
+
+// trinity-device
+gn10_can::devices::SolenoidDriverClient trinity_device(can1_bus, 0);
 
 void update_heartbeat_led()
 {
@@ -56,19 +58,38 @@ void setup()
     fdcan3_driver.init();
     can1_driver.set_tx_timeout(2);
     can1_driver.init();
-    belt_launcher_client.set_init();  // ここで1回だけ;
+    // device init
+    belt_launcher_client.set_init();
+    trinity_device.set_init();
     htmd_setup();
 }
 
+bool on_off;
 void loop()
 {
+    // launcher
     float encoder_feedback_data;
     if (belt_launcher_client.get_velocity_feedback(encoder_feedback_data)) {
         serial_printf("%f\n", encoder_feedback_data);
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
     }
-
+    // md
     motor_client.set_target(2.0f);
+    std::array<bool, 8> trinity_targets{};
+    if (on_off) {
+        for (int i = 0; i < 8; i++) {
+            trinity_targets[i] = true;
+        }
+        on_off = false;
+    } else {
+        for (int i = 0; i < 8; i++) {
+            trinity_targets[i] = false;
+        }
+        on_off = true;
+    }
+    trinity_device.set_target(trinity_targets);
+
+    HAL_Delay(1000);
     update_heartbeat_led();
 }
 
