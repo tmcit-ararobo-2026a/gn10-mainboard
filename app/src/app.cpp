@@ -200,6 +200,7 @@ void command_robot_drivers()
         if (robot_operation.navigation_status == robot_config::NavigationStatus::Tracking) {
             angular_vel = robot_operation.vel_yaw;
         }
+        robot_yaw_angle = robot_operation.robot_yaw_angle;
     }
 
     omni.convert(-x_vel, y_vel, angular_vel, robot_yaw_angle);
