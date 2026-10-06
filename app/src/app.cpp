@@ -118,9 +118,6 @@ BucketArmController bucket_arm(
     BUCKET_ARM_WIDTH_MIN
 );
 
-// 自動制御
-bool navigation_enabled = false;  // 自律移動
-
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
 robot_config::teleop_t last_teleop{};
@@ -132,7 +129,6 @@ robot_config::command_t robot_command{};
 robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
 uint32_t last_operation_received_ms = 0;
-bool operation_timeout              = false;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -182,25 +178,31 @@ void packet_led_information_data()
  */
 void command_robot_drivers()
 {
-    float x_vel, y_vel, angular_vel;
     // 足回り
-    if (navigation_enabled) {
-        x_vel       = robot_operation.vel_x;
-        y_vel       = robot_operation.vel_y;
-        angular_vel = robot_operation.vel_yaw;
-    } else {
-        x_vel =
-            std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
-            LINER_VELOCITY_MAX;
-        y_vel =
-            std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
-            LINER_VELOCITY_MAX;
-        angular_vel =
-            std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
-            ANGULAR_VELOCITY_MAX;
+    float x_vel =
+        std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
+        LINER_VELOCITY_MAX;
+    float y_vel =
+        std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
+        LINER_VELOCITY_MAX;
+    float angular_vel =
+        std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
+        ANGULAR_VELOCITY_MAX;
+
+    float robot_yaw_angle =
+        0.0f;  // フィールド座標系からのロボットのYaw角[rad]（0はロボット座標系に等しい）
+    if (robot_command.navigation_command != robot_config::NavigationCommand::Sleep) {
+        if (robot_operation.navigation_status == robot_config::NavigationStatus::Moving) {
+            x_vel       = -robot_operation.vel_y;
+            y_vel       = robot_operation.vel_x;
+            angular_vel = robot_operation.vel_yaw;
+        }
+        if (robot_operation.navigation_status == robot_config::NavigationStatus::Tracking) {
+            angular_vel = robot_operation.vel_yaw;
+        }
     }
 
-    omni.convert(-x_vel, y_vel, angular_vel, 0.0f);
+    omni.convert(-x_vel, y_vel, angular_vel, robot_yaw_angle);
     float front, right, left;
     omni.getWheelAngularVelocity(&front, &left, &right);
     std::array<float, 4> wheel_targets{
@@ -219,9 +221,7 @@ void command_robot_drivers()
             teleop.buttons.right_down && !last_teleop.buttons.right_down
         );
     }
-    if (navigation_enabled &&
-        (robot_operation.navigation_status == robot_config::NavigationStatus::Goal ||
-         robot_operation.navigation_status == robot_config::NavigationStatus::Tracking)) {
+    if (robot_command.navigation_command == robot_config::NavigationCommand::Move) {
         belt_launcher_controller.set_velocity(robot_operation.belt_launcher_speed);
     }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
@@ -458,12 +458,9 @@ void loop()
         stop_all_actuators();
     }
     if (ether.receive_operation_data(robot_operation)) {
-        operation_timeout          = false;
         last_operation_received_ms = now_ms;
-    } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS && !operation_timeout) {
-        operation_timeout = true;
+    } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS) {
         // 自律制御部分を無効化してコントローラーによる制御に移行
-        navigation_enabled               = false;
         robot_command.navigation_command = robot_config::NavigationCommand::Sleep;
     }
 
