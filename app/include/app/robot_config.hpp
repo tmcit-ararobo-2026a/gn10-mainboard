@@ -56,9 +56,16 @@ enum class TargetId : uint8_t {
 enum class NavigationStatus : uint8_t {
     Stanby,
     Ready,
-    MovingTowardsTheTarget,
-    TrackingMovingBucket,
-    ReachedTheGoal,
+    Moving,
+    Tracking,
+    Goal,
+    Fail,
+};
+
+enum class NavigationCommand : uint8_t {
+    Sleep,  // ナビゲーションモードではないので休む
+    Stanby,  // 命令なし（自動移動であればゴール達成後は何もしない。トラッキングであれば即座にやめる。）
+    Move,  // 移動命令がある
 };
 
 struct command_t {
@@ -70,7 +77,7 @@ struct command_t {
     bool logging;
     // 自動操縦
     TargetId target_id;
-    NavigationStatus navigation_status;
+    NavigationCommand navigation_command;
     bool cloth_collect;
 
 } __attribute__((__packed__));

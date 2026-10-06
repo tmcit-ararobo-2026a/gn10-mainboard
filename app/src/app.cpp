@@ -220,9 +220,8 @@ void command_robot_drivers()
         );
     }
     if (navigation_enabled &&
-        (robot_operation.navigation_status == robot_config::NavigationStatus::ReachedTheGoal ||
-         robot_operation.navigation_status ==
-             robot_config::NavigationStatus::TrackingMovingBucket)) {
+        (robot_operation.navigation_status == robot_config::NavigationStatus::Goal ||
+         robot_operation.navigation_status == robot_config::NavigationStatus::Tracking)) {
         belt_launcher_controller.set_velocity(robot_operation.belt_launcher_speed);
     }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
@@ -464,8 +463,8 @@ void loop()
     } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS && !operation_timeout) {
         operation_timeout = true;
         // 自律制御部分を無効化してコントローラーによる制御に移行
-        navigation_enabled              = false;
-        robot_command.navigation_status = robot_config::NavigationStatus::Stanby;
+        navigation_enabled               = false;
+        robot_command.navigation_command = robot_config::NavigationCommand::Sleep;
     }
 
     packet_led_information_data();
