@@ -457,6 +457,14 @@ void loop()
         teleop_timeout = true;
         stop_all_actuators();
     }
+    if (teleop.buttons.stick_push_left && !last_teleop.buttons.stick_push_left) {
+        if (robot_command.navigation_command == robot_config::NavigationCommand::Sleep) {
+            robot_command.navigation_command = robot_config::NavigationCommand::Stanby;
+        } else {
+            robot_command.navigation_command = robot_config::NavigationCommand::Sleep;
+        }
+    }
+
     if (ether.receive_operation_data(robot_operation)) {
         last_operation_received_ms = now_ms;
     } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS) {
