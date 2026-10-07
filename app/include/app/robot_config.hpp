@@ -99,7 +99,6 @@ struct operation_t {
     uint8_t reserved[1];
     TargetId target_id;
     NavigationStatus navigation_status;
-    float robot_yaw_angle;          // フィールド座標系からロボット座標系へのYaw角[rad]
     float vel_x;                    // 移動司令値[m/s]
     float vel_y;                    // 移動司令値[m/s]
     float vel_yaw;                  // 移動司令値[rad/s]
@@ -120,7 +119,7 @@ union operation_u {
     uint8_t binary[sizeof(operation_t)];  // 送信バイト配列
 } __attribute__((__packed__));
 
-static_assert(sizeof(operation_t) == 36);
+static_assert(sizeof(operation_t) == 32);
 
 /**
  * @brief ロボットのセンサ値などのフィードバック
