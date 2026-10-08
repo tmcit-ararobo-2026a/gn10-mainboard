@@ -2,21 +2,20 @@
  * @file robot_data_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
- * @version 2.2
- * @date 2026-09-07
+ * @version 3.0
+ * @date 2026-10-05
  *
  * @copyright Copyright (c) 2026
  *
- * socket_cmd (port:26574)
+ * socket_command (port:26574)
+ *  |-  command      main-board  ->  pc
+ *
+ * socket_operation (port:39244)
  *  |-  operation    pc          ->  main-board
  *  |-  feedback     main-board  ->  pc
  *
  * socket_teleop (port:10410)
  *  |-  teleop            robo-con    ->  pc ( main (in debug_mode))
- *
- * socket_debug (port:39244)
- *  |-  pc_debug          main-board  ->  pc
- *  |-  main_debug        pc          ->  main-board
  */
 #pragma once
 #include <stdint.h>
@@ -24,17 +23,16 @@
 namespace robot_config {
 
 namespace header {
-constexpr uint8_t operation  = 0xAB;
-constexpr uint8_t feedback   = 0x55;
-constexpr uint8_t teleop     = 0xAA;
-constexpr uint8_t pc_debug   = 0x38;
-constexpr uint8_t main_debug = 0x2A;
+constexpr uint8_t command   = 0x38;
+constexpr uint8_t operation = 0xAB;
+constexpr uint8_t feedback  = 0x55;
+constexpr uint8_t teleop    = 0xAA;
 }  // namespace header
 
 namespace port {
-constexpr uint16_t cmd    = 26574;
-constexpr uint16_t teleop = 10410;
-constexpr uint16_t debug  = 39244;
+constexpr uint16_t command   = 26574;
+constexpr uint16_t operation = 39244;
+constexpr uint16_t teleop    = 10410;
 }  // namespace port
 
 namespace ip {
@@ -44,34 +42,84 @@ constexpr uint8_t pc_wifi[]   = {192, 168, 2, 1};
 constexpr uint8_t teleop[]    = {192, 168, 2, 2};
 }  // namespace ip
 
-/**
- * @brief ロボットの動作司令値 44byte
- *
- */
+enum class TargetId : uint8_t {
+    StartZone,
+    FixedBucket1,
+    FixedBucket2,
+    FixedBucket3,
+    Desk1,
+    Desk2,
+    Flag,
+    MovingBucket,
+};
+
+enum class NavigationStatus : uint8_t {
+    Stanby,
+    Ready,
+    Moving,
+    Tracking,
+    Goal,
+    Fail,
+};
+
+enum class NavigationCommand : uint8_t {
+    Sleep,  // ナビゲーションモードではないので休む
+    Stanby,  // 命令なし（自動移動であればゴール達成後は何もしない。トラッキングであれば即座にやめる。）
+    Move,  // 移動命令がある
+};
+
 struct command_t {
-    // 識別ヘッダー 1byte
     uint8_t header;
-    uint8_t reserved[1];
-    bool estimated_success;           // 自己位置推定成功
-    bool belt_launcher_ready;         // 射程合わせOK
-    float vel_x;                      // 移動司令値[m/s]
-    float vel_y;                      // 移動司令値[m/s]
-    float vel_yaw;                    // 移動司令値[rad/s]
-    float belt_launcher_speed;        // ベルト直動の速度司令値（自動計算）[m/s]
-    float move_bucket_angle_yaw_rad;  // ロボット座標系における移動バケツの水平角[rad]
-    float bucket1_angle_yaw_rad;      // ロボット座標系におけるバケツ1の水平角[rad]
-    float bucket2_angle_yaw_rad;      // ロボット座標系におけるバケツ2の水平角[rad]
-    float bucket3_angle_yaw_rad;      // ロボット座標系におけるバケツ3の水平角[rad]
-    float flag_angle_yaw_rad;         // ロボット座標系における旗の水平角[rad]
-    float desk_angle_yaw_rad;         // ロボット座標系における机の水平角[rad]
+    uint8_t sequence;
+    // Jetsonの操作
+    bool shutdown;
+    bool localization;
+    bool logging;
+    // 自動操縦
+    TargetId target_id;
+    NavigationCommand navigation_command;
+    bool cloth_collect;
+
 } __attribute__((__packed__));
 
 union command_u {
-    command_t value;                    // 操作データ
-    uint8_t binary[sizeof(command_t)];  // 送信バイト配列
+    command_t value;
+    uint8_t binary[sizeof(command_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(command_t) == 44);
+static_assert(sizeof(command_t) == 8);
+
+/**
+ * @brief ロボットの動作 44byte
+ *
+ */
+struct operation_t {
+    // 識別ヘッダー 1byte
+    uint8_t header;
+    uint8_t reserved[1];
+    TargetId target_id;
+    NavigationStatus navigation_status;
+    float vel_x;                    // 移動司令値[m/s]
+    float vel_y;                    // 移動司令値[m/s]
+    float vel_yaw;                  // 移動司令値[rad/s]
+    float belt_launcher_speed;      // ベルト直動の速度司令値（自動計算）[m/s]
+    float bucket_arm_height;        // バケツアームの高さ[m]
+    bool bucket_arm_width_extract;  // バケツアームの展開
+    bool bucket_arm_hold;           // バケツアームのハンド保持
+    int8_t move_bucket_angle_yaw;   // ロボット座標系における移動バケツの水平角[-20〜20deg]
+    int8_t bucket1_angle_yaw;       // ロボット座標系におけるバケツ1の水平角[-20〜20deg]
+    int8_t bucket2_angle_yaw;       // ロボット座標系におけるバケツ2の水平角[-20〜20deg]
+    int8_t bucket3_angle_yaw;       // ロボット座標系におけるバケツ3の水平角[-20〜20deg]
+    int8_t flag_angle_yaw;          // ロボット座標系における旗の水平角[-20〜20deg]
+    int8_t desk_angle_yaw;          // ロボット座標系における机の水平角[-20〜20deg]
+} __attribute__((__packed__));
+
+union operation_u {
+    operation_t value;                    // 操作データ
+    uint8_t binary[sizeof(operation_t)];  // 送信バイト配列
+} __attribute__((__packed__));
+
+static_assert(sizeof(operation_t) == 32);
 
 /**
  * @brief ロボットのセンサ値などのフィードバック
@@ -146,35 +194,5 @@ union teleop_u {
 } __attribute__((__packed__));
 
 static_assert(sizeof(teleop_t) == 8);
-
-/**
- * @brief PCのデバッグ用通信（再起動やスクリプト開始など）
- *
- */
-struct debug_pc_t {
-    uint8_t header;  // ヘッダー
-    bool jetson_restart;
-    bool jetson_shutdown;
-    bool node_start;
-    bool node_stop;
-} __attribute__((__packed__));
-
-union debug_pc_u {
-    debug_pc_t value;
-    uint8_t binary[sizeof(debug_pc_t)];
-} __attribute__((__packed__));
-
-/**
- * @brief メイン基板(RobotControlHub)のデバッグ用通信（制御モード切り替えなど）
- *
- */
-struct debug_main_t {
-    uint8_t header;
-} __attribute__((__packed__));
-
-union debug_main_u {
-    debug_main_t value;
-    uint8_t binary[sizeof(debug_main_t)];
-} __attribute__((__packed__));
 
 }  // namespace robot_config
