@@ -56,7 +56,7 @@ constexpr float BUCKET_PID_GAINS[3]             = {1.0f, 0.0f, 0.0f};
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
 // エアシリンダを収納する際の開放時間[ms]
-constexpr uint32_t AIR_STORAGE_LENGTH_MS = 800;
+constexpr uint32_t AIR_STORAGE_LENGTH_MS = 500;
 // 機械定数
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
