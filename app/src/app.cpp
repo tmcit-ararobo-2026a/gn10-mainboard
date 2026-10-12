@@ -264,7 +264,7 @@ void command_robot_drivers()
 
     // エア射出
     std::array<bool, 8> solenoid_targets{};
-    solenoid_targets[0] = teleop.buttons.left_up;     // 旗
+    solenoid_targets[0] = 1;                          // 空圧レギュレータ電源用
     solenoid_targets[1] = teleop.buttons.left_right;  // 机右
     solenoid_targets[2] = teleop.buttons.left_left;   // 机左
     if (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]) {
