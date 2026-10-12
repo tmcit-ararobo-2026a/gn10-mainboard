@@ -1,0 +1,27 @@
+@startuml system_data_flow
+skinparam monochrome false
+skinparam roundcorner 10
+skinparam defaultFontName SansSerif
+
+actor "オペレータ" as Pilot
+participant "コントローラー\n(Teleop)" as Teleop
+participant "メイン基板\n(main-board)" as MainBoard
+participant "Jetson\n(ROS 2)" as Jetson
+collections "アクチュエータ\n(CAN / Solenoid)" as Actuators
+
+Pilot -> Teleop : スティック / 十字キー / スイッチ操作
+Teleop -> MainBoard : teleop_t (UDP: 10410)
+
+group メイン基板 内部処理パイプライン
+    MainBoard -> MainBoard : ① Teleop入力パース & モード判定\n(手動 / 自動)
+    MainBoard -> MainBoard : ② RobotStateMachine 更新\n(TargetId & NavigationCommand 生成)
+    MainBoard -> Jetson : command_t (UDP: 26574, 50ms周期)
+    Jetson -> MainBoard : operation_t (UDP: 39244, 非同期/周期)
+    MainBoard -> MainBoard : ③ ControlArbitrator による操作権限調停\n(手動 vs 自動 vs 不可)
+    MainBoard -> Actuators : ④ CAN / FDCAN / GPIO 制御司令
+end
+
+Actuators --> MainBoard : CAN Feedback
+MainBoard -> Jetson : feedback_t (UDP: 39244, 50ms周期)
+@enduml
+

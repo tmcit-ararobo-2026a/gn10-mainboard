@@ -1,0 +1,22 @@
+@startuml state_machine_diagram
+[*] --> Standby : 制御系統電源投入
+Standby --> Ready : 通信・自己位置推定成功 (gn10-pointcloud-localization)
+Ready --> Moving : 自動移動命令 (gn10-navigation)
+Moving --> Fail : 自己位置推定/通信エラー、危険領域侵入
+Moving --> Goal : 目標地点に到着し誤差範囲内
+Moving --> Ready : 移動のキャンセル
+Goal --> Ready : 目標地点の誤差範囲外に出た
+Ready --> Tracking : 移動バケツ追従司令
+Tracking --> Fail : 移動バケツ見失い / 範囲外
+Tracking --> Ready : 移動バケツ追従司令解除
+Ready --> Fail : 自動移動不可能
+Fail --> Ready : 危険状態からの復帰
+
+Standby : 【手動操縦モード】全アクチュエータ手動
+Ready   : 【スタンバイ】移動:手動 | 射出:手動 | 威力:手動 | ハンド:自動
+Moving  : 【自動移動中】移動:自動 | 射出:手動 | 威力:自動 | ハンド:不可(安全ロック)
+Goal    : 【目標到着】移動:手動 | 射出:手動 | 威力:手動 | ハンド:自動
+Tracking: 【バケツ追従】水平移動:手動 | 回転:自動 | 射出:手動 | 威力:自動 | ハンド:不可
+Fail    : 【エラー安全退避】全アクチュエータ手動（安全フォールバック）
+@enduml
+
