@@ -262,7 +262,7 @@ void command_robot_drivers()
         air_launcher[0].last_fire_tick_ms = now_ms;
         air_launcher[0].fired             = true;
     }
-    if (!teleop.buttons.left_right && last_teleop.buttons.left_right) {
+    if (!teleop.buttons.left_left && last_teleop.buttons.left_left) {
         air_launcher[1].last_fire_tick_ms = now_ms;
         air_launcher[1].fired             = true;
     }
@@ -270,8 +270,9 @@ void command_robot_drivers()
         if (air_launcher[i].fired) {
             uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
             if (elapsed_time_ms > AIR_STORAGE_DELAY_MS) {
-                air_launcher[i].fired     = false;
-                air_launcher[i].storaging = true;
+                air_launcher[i].fired                   = false;
+                air_launcher[i].storaging               = true;
+                air_launcher[i].start_storaging_tick_ms = now_ms;
             }
         }
         if (air_launcher[i].storaging) {
