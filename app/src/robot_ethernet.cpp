@@ -65,28 +65,49 @@ bool RobotEthernet::init()
     setRTR(100);
 
     // ソケット作成
-    socket(socket_cmd_, Sn_MR_UDP, robot_config::port::cmd, SF_IO_NONBLOCK);
+    socket(socket_command_, Sn_MR_UDP, robot_config::port::command, SF_IO_NONBLOCK);
+    socket(socket_operation_, Sn_MR_UDP, robot_config::port::operation, SF_IO_NONBLOCK);
     socket(socket_teleop_, Sn_MR_UDP, robot_config::port::teleop, SF_IO_NONBLOCK);
-    socket(socket_debug_, Sn_MR_UDP, robot_config::port::debug, SF_IO_NONBLOCK);
 
     return true;
 }
 
-bool RobotEthernet::receive_command_data(robot_config::command_t& data)
+bool RobotEthernet::send_command_data(const robot_config::command_t& data)
 {
-    robot_config::command_u rx_data;
+    robot_config::command_u tx_data;
+    tx_data.value        = data;
+    tx_data.value.header = robot_config::header::command;
+
+    uint8_t ip_address[4];
+    memcpy(ip_address, robot_config::ip::pc_robot, 4);
+
+    int32_t len = sendto(
+        socket_command_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::command
+    );
+
+    if (len != sizeof(robot_config::command_u)) return false;
+    return true;
+}
+
+bool RobotEthernet::receive_operation_data(robot_config::operation_t& data)
+{
+    robot_config::operation_u rx_data;
     uint8_t source_address[4];
     uint16_t source_port;
 
     int32_t ret = recvfrom(
-        socket_cmd_, rx_data.binary, sizeof(robot_config::command_u), source_address, &source_port
+        socket_operation_,
+        rx_data.binary,
+        sizeof(robot_config::operation_u),
+        source_address,
+        &source_port
     );
     // データ整合性チェック
-    if (ret != sizeof(robot_config::command_u)) return false;
+    if (ret != sizeof(robot_config::operation_u)) return false;
     if (rx_data.value.header != robot_config::header::operation) return false;
     // 送信元チェック
     if (std::memcmp(source_address, robot_config::ip::pc_robot, 4) != 0) return false;
-    if (source_port != robot_config::port::cmd) return false;
+    if (source_port != robot_config::port::operation) return false;
 
     data = rx_data.value;
     return true;
@@ -101,8 +122,13 @@ bool RobotEthernet::send_feedback_data(const robot_config::feedback_t& data)
     uint8_t ip_address[4];
     memcpy(ip_address, robot_config::ip::pc_robot, 4);
 
-    int32_t len =
-        sendto(socket_cmd_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::cmd);
+    int32_t len = sendto(
+        socket_operation_,
+        tx_data.binary,
+        sizeof(tx_data),
+        ip_address,
+        robot_config::port::operation
+    );
 
     if (len != sizeof(robot_config::feedback_u)) return false;
     return true;
@@ -123,47 +149,6 @@ bool RobotEthernet::receive_teleop(robot_config::teleop_t& data)
     // 送信元チェック
     if (std::memcmp(source_address, robot_config::ip::teleop, 4) != 0) return false;
     if (source_port != robot_config::port::teleop) return false;
-
-    data = rx_data.value;
-    return true;
-}
-
-bool RobotEthernet::send_pc_debug_data(const robot_config::debug_pc_t& data)
-{
-    robot_config::debug_pc_u tx_data;
-    tx_data.value        = data;
-    tx_data.value.header = robot_config::header::pc_debug;
-
-    uint8_t ip_address[4];
-    memcpy(ip_address, robot_config::ip::pc_robot, 4);
-
-    int32_t len = sendto(
-        socket_debug_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::debug
-    );
-
-    if (len != sizeof(robot_config::debug_pc_u)) return false;
-    return true;
-}
-
-bool RobotEthernet::receive_main_debug(robot_config::debug_main_t& data)
-{
-    robot_config::debug_main_u rx_data;
-    uint8_t source_address[4];
-    uint16_t source_port;
-
-    int32_t ret = recvfrom(
-        socket_debug_,
-        rx_data.binary,
-        sizeof(robot_config::debug_main_u),
-        source_address,
-        &source_port
-    );
-    // データ整合性チェック
-    if (ret != sizeof(robot_config::debug_main_u)) return false;
-    if (rx_data.value.header != robot_config::header::main_debug) return false;
-    // 送信元チェック
-    if (std::memcmp(source_address, robot_config::ip::pc_robot, 4) != 0) return false;
-    if (source_port != robot_config::port::debug) return false;
 
     data = rx_data.value;
     return true;
