@@ -15,8 +15,10 @@
 // gn10-mainboard
 #include "app/belt_launcher_controller.hpp"
 #include "app/bucket_arm_controller.hpp"
+#include "app/control_arbitrator.hpp"
 #include "app/led_information.hpp"
 #include "app/robot_ethernet.hpp"
+#include "app/robot_state_machine.hpp"
 #include "app/serial_printf.hpp"
 #include "app/three_wheel_omni.hpp"
 // others
@@ -137,11 +139,12 @@ robot_config::teleop_t last_teleop{};
 uint32_t last_teleop_received_ms = 0;
 bool teleop_timeout              = false;
 
-/* --------------------- PCとの通信 -----------------------------*/
-robot_config::command_t robot_command{};
+/* --------------------- 状態管理・PCとの通信 -----------------------------*/
+RobotStateMachine state_machine;
 robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
-uint32_t last_operation_received_ms = 0;
+uint32_t last_command_send_time_ms          = 0;
+constexpr uint32_t COMMAND_SEND_INTERVAL_MS = 50;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -191,63 +194,76 @@ void packet_led_information_data()
  */
 void command_robot_drivers()
 {
-    // 足回り
-    float x_vel =
+    // --- 1. 手動操作入力（Teleop）の正規化 ---
+    const float teleop_vx =
         std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
         LINER_VELOCITY_MAX;
-    float y_vel =
+    const float teleop_vy =
         std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
         LINER_VELOCITY_MAX;
-    float angular_vel =
+    const float teleop_vyaw =
         std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
         ANGULAR_VELOCITY_MAX;
 
-    float robot_yaw_angle =
-        0.0f;  // フィールド座標系からのロボットのYaw角[rad]（0はロボット座標系に等しい）
-    if (robot_command.navigation_command != robot_config::NavigationCommand::Sleep) {
-        if (robot_operation.navigation_status == robot_config::NavigationStatus::Moving) {
-            x_vel       = -robot_operation.vel_y;
-            y_vel       = robot_operation.vel_x;
-            angular_vel = robot_operation.vel_yaw;
-        }
-        if (robot_operation.navigation_status == robot_config::NavigationStatus::Tracking) {
-            angular_vel = robot_operation.vel_yaw;
-        }
+    // 手動射出トリガー（左下ボタンが押されていない状態で、右右ボタンが押された瞬間）
+    const bool teleop_fire_trigger =
+        !teleop.buttons.left_down &&
+        (teleop.buttons.right_right && !last_teleop.buttons.right_right);
+
+    // 手動アーム操作入力
+    float teleop_arm_height = 0.0f;
+    float teleop_arm_hold   = 0.0f;
+    if (teleop.buttons.left_down) {
+        teleop_arm_height =
+            bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
+        teleop_arm_hold = bucket_arm.hold_motor_output(teleop.buttons.right_right);
     }
 
-    omni.convert(-x_vel, y_vel, angular_vel, robot_yaw_angle);
-    float front, right, left;
+    // --- 2. 操作権限の調停 (Arbitration) ---
+    const ArbitratedControl ctrl = ControlArbitrator::arbitrate(
+        state_machine.get_status(),
+        teleop,
+        robot_operation,
+        teleop_vx,
+        teleop_vy,
+        teleop_vyaw,
+        teleop_fire_trigger,
+        teleop_arm_height,
+        teleop_arm_hold
+    );
+
+    // --- 3. 足回り（オムニ）出力 ---
+    constexpr float robot_yaw_angle = 0.0f;
+    omni.convert(-ctrl.chassis_vx, ctrl.chassis_vy, ctrl.chassis_vyaw, robot_yaw_angle);
+    float front = 0.0f, right = 0.0f, left = 0.0f;
     omni.getWheelAngularVelocity(&front, &left, &right);
-    std::array<float, 4> wheel_targets{
+    const std::array<float, 4> wheel_targets{
         front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
     };
     esc_wheel.set_targets(wheel_targets.data());
 
-    // ベルト直動
+    // --- 4. ベルト直動 ---
     if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
         belt_launcher_controller.set_deinit();
         belt_launcher_client.set_init();
     }
-    if (!teleop.buttons.left_down) {
+    if (ctrl.belt_auto_velocity) {
+        belt_launcher_controller.set_velocity(ctrl.belt_launcher_target_velocity);
+    } else if (!teleop.buttons.left_down) {
         belt_launcher_controller.update_velocity(
             teleop.buttons.right_up && !last_teleop.buttons.right_up,
             teleop.buttons.right_down && !last_teleop.buttons.right_down
         );
     }
-    if (robot_command.navigation_command == robot_config::NavigationCommand::Move) {
-        belt_launcher_controller.set_velocity(robot_operation.belt_launcher_speed);
-    }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
-    float belt_launcher_target_vel{};
-    // 左下ボタンが押されていない間はベルト直動操作モード
-    if (!teleop.buttons.left_down) {
-        if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {  // 射出操作
-            if (belt_launcher_controller.fire(
-                    belt_launcher_target_vel, robot_feedback.drive_battery_voltages
-                )) {  // 射出できるかどうか
-                belt_launcher_client.send_fire_command(belt_launcher_target_vel);
-                robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
-            }
+
+    if (ctrl.belt_fire_trigger) {
+        float belt_launcher_target_vel = 0.0f;
+        if (belt_launcher_controller.fire(
+                belt_launcher_target_vel, robot_feedback.drive_battery_voltages
+            )) {
+            belt_launcher_client.send_fire_command(belt_launcher_target_vel);
+            robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
         }
     }
     led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
@@ -293,23 +309,12 @@ void command_robot_drivers()
     }
     solenoid.set_target(solenoid_targets);
 
-    // バケツ用アーム
-    float arm_height_target = 0.0f;
-    if (teleop.buttons.left_down) {
-        arm_height_target =
-            bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
-        arm_hold_and_loading_and_width_target[1] =
-            bucket_arm.hold_motor_output(teleop.buttons.right_right);
-    } else {
-        arm_hold_and_loading_and_width_target[1] = 0.0f;
-    }
-    // 横のバケツアーム書く↓
+    // --- 6. バケツ用アーム ---
+    float arm_height_target                  = ctrl.arm_height_target;
+    arm_hold_and_loading_and_width_target[1] = ctrl.arm_hold_target;
 
-    //  装填
-    if (belt_launcher_controller.load_a_cloth(
-            arm_hold_and_loading_and_width_target[2], HAL_GetTick()
-        )) {
-    }
+    // 装填
+    belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[2], now_ms);
 
     // CAN通信
     esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data());
@@ -498,37 +503,42 @@ void setup()
 void loop()
 {
     const uint32_t now_ms = HAL_GetTick();
-    // 指令値取得
+
+    // 1. コントローラ（Teleop）受信とアクチュエータ駆動
     if (ether.receive_teleop(teleop)) {
         teleop_timeout          = false;
         last_teleop_received_ms = now_ms;
+
+        // コントローラ入力による状態遷移要求（左スティック押し込み等）
+        state_machine.handle_teleop_input(teleop, last_teleop);
+
         command_robot_drivers();
     } else if ((now_ms - last_teleop_received_ms) > TELEOP_TIMEOUT_MS && !teleop_timeout) {
         teleop_timeout = true;
+        state_machine.request_sleep();
         stop_all_actuators();
     }
-    if (teleop.buttons.stick_push_left && !last_teleop.buttons.stick_push_left) {
-        if (robot_command.navigation_command == robot_config::NavigationCommand::Sleep) {
-            robot_command.navigation_command = robot_config::NavigationCommand::Stanby;
-        } else {
-            robot_command.navigation_command = robot_config::NavigationCommand::Sleep;
-        }
+
+    // 2. Jetsonからの operation 受信と状態機械の更新（タイムアウト監視含む）
+    const bool operation_received = ether.receive_operation_data(robot_operation);
+    state_machine.update(now_ms, operation_received, robot_operation);
+
+    // 3. Jetsonへの command 送信（周期送信）
+    if ((now_ms - last_command_send_time_ms) >= COMMAND_SEND_INTERVAL_MS) {
+        last_command_send_time_ms = now_ms;
+        ether.send_command_data(state_machine.get_command());
     }
 
-    if (ether.receive_operation_data(robot_operation)) {
-        last_operation_received_ms = now_ms;
-    } else if ((now_ms - last_operation_received_ms) > OPERATION_TIMEOUT_MS) {
-        // 自律制御部分を無効化してコントローラーによる制御に移行
-        robot_command.navigation_command = robot_config::NavigationCommand::Sleep;
-    }
-
+    // 4. LED表示情報の更新
     packet_led_information_data();
-    // フィードバック処理
+
+    // 5. フィードバック処理と送信
     receive_and_process_feedbacks();
     periodic_feedback();
+
     last_teleop = teleop;
 
-    // Basic System Process
+    // 6. システム生存表示（青LED）
     update_heartbeat_led();
 }
 

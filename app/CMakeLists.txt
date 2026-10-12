@@ -6,6 +6,8 @@ add_library(app STATIC
     src/robot_ethernet.cpp
     src/bucket_arm_controller.cpp
     src/belt_launcher_controller.cpp
+    src/robot_state_machine.cpp
+    src/control_arbitrator.cpp
 )
 
 target_include_directories(app PUBLIC
