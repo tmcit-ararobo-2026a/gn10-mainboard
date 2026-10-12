@@ -52,6 +52,11 @@ constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]（記入なし
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 constexpr float BUCKET_PID_GAINS[3]             = {1.0f, 0.0f, 0.0f};
+// エアシリンダ
+// 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
+constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
+// エアシリンダを収納する際の開放時間[ms]
+constexpr uint32_t AIR_STORAGE_LENGTH_MS = 800;
 // 機械定数
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
@@ -117,6 +122,14 @@ BucketArmController bucket_arm(
     BUCKET_ARM_WIDTH_MAX,
     BUCKET_ARM_WIDTH_MIN
 );
+// エアシリンダ
+struct AirLauncherStorage {
+    uint32_t last_fire_tick_ms;
+    uint32_t start_storaging_tick_ms;
+    bool fired;
+    bool storaging;
+};
+AirLauncherStorage air_launcher[2];
 
 // 自動制御
 bool navigation_enabled = false;  // 自律移動
@@ -263,10 +276,38 @@ void command_robot_drivers()
     led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
 
     // エア射出
+    const uint32_t now_ms = HAL_GetTick();
     std::array<bool, 8> solenoid_targets{};
     solenoid_targets[0] = 1;                          // 空圧レギュレータ電源用
     solenoid_targets[1] = teleop.buttons.left_right;  // 机右
     solenoid_targets[2] = teleop.buttons.left_left;   // 机左
+    if (!teleop.buttons.left_right && last_teleop.buttons.left_right) {
+        air_launcher[0].last_fire_tick_ms = now_ms;
+        air_launcher[0].fired             = true;
+    }
+    if (!teleop.buttons.left_right && last_teleop.buttons.left_right) {
+        air_launcher[1].last_fire_tick_ms = now_ms;
+        air_launcher[1].fired             = true;
+    }
+    for (uint32_t i = 0; i < 2; i++) {
+        if (air_launcher[i].fired) {
+            uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
+            if (elapsed_time_ms > AIR_STORAGE_DELAY_MS) {
+                air_launcher[i].fired     = false;
+                air_launcher[i].storaging = true;
+            }
+        }
+        if (air_launcher[i].storaging) {
+            uint32_t elapsed_time_ms = now_ms - air_launcher[i].start_storaging_tick_ms;
+            if (elapsed_time_ms > AIR_STORAGE_LENGTH_MS) {
+                air_launcher[i].fired     = false;
+                air_launcher[i].storaging = false;
+            }
+        }
+    }
+    solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
+    solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
+
     if (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]) {
         led_info.air_injection = true;
     } else {
@@ -462,7 +503,15 @@ void setup()
     belt_launcher_controller.set_reference_voltage(BELT_LAUNCHER_REFERENCE_VOLTAGE);
     belt_launcher_controller.set_voltage_compensation_ratio(BELT_LAUNCHER_COMPENSATION_RATIO);
     // System setup
-    heartbeat_last_toggle_time_ms = HAL_GetTick();
+    const uint32_t now_ms         = HAL_GetTick();
+    heartbeat_last_toggle_time_ms = now_ms;
+
+    for (uint32_t i = 0; i < 2; i++) {
+        air_launcher[i].last_fire_tick_ms       = now_ms;
+        air_launcher[i].start_storaging_tick_ms = now_ms;
+        air_launcher[i].storaging               = false;
+        air_launcher[i].fired                   = false;
+    }
 }
 
 /**
