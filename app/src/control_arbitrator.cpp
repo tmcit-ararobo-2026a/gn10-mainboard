@@ -7,15 +7,18 @@ ArbitratedControl ControlArbitrator::arbitrate(
     float teleop_vx,
     float teleop_vy,
     float teleop_vyaw,
-    bool teleop_fire_pressed,
+    bool belt_fire_trigger,
+    bool air_fire_trigger,
     float teleop_arm_height,
-    float teleop_arm_hold
+    float teleop_arm_hold,
+    float teleop_arm_width
 )
 {
     ArbitratedControl result{};
 
-    // 全モード共通: ベルト射出トリガーは手動操作
-    result.belt_fire_trigger = teleop_fire_pressed;
+    // 全モード共通: L1/R1 トリガーによる射出実行 (teleop_key_config.md 第2項)
+    result.belt_fire_trigger = belt_fire_trigger;
+    result.air_fire_trigger  = air_fire_trigger;
 
     switch (status) {
         case robot_config::NavigationStatus::Moving:
@@ -25,13 +28,13 @@ ArbitratedControl ControlArbitrator::arbitrate(
             result.chassis_vyaw = op.vel_yaw;
 
             // ベルト直動威力：自動
-            result.belt_auto_velocity          = true;
+            result.belt_auto_velocity            = true;
             result.belt_launcher_target_velocity = op.belt_launcher_speed;
 
             // ハンド操作：不可（安全ロック）
-            result.arm_manual_allowed = false;
-            result.arm_height_target  = 0.0f;
-            result.arm_hold_target    = 0.0f;
+            result.arm_height_target = 0.0f;
+            result.arm_hold_target   = 0.0f;
+            result.arm_width_target  = 0.0f;
             break;
 
         case robot_config::NavigationStatus::Tracking:
@@ -41,13 +44,13 @@ ArbitratedControl ControlArbitrator::arbitrate(
             result.chassis_vyaw = op.vel_yaw;
 
             // ベルト直動威力：自動
-            result.belt_auto_velocity          = true;
+            result.belt_auto_velocity            = true;
             result.belt_launcher_target_velocity = op.belt_launcher_speed;
 
             // ハンド操作：不可（安全ロック）
-            result.arm_manual_allowed = false;
-            result.arm_height_target  = 0.0f;
-            result.arm_hold_target    = 0.0f;
+            result.arm_height_target = 0.0f;
+            result.arm_hold_target   = 0.0f;
+            result.arm_width_target  = 0.0f;
             break;
 
         case robot_config::NavigationStatus::Ready:
@@ -60,17 +63,16 @@ ArbitratedControl ControlArbitrator::arbitrate(
             // ベルト直動威力：手動
             result.belt_auto_velocity = false;
 
-            // ハンド操作：自動（Jetsonからの司令値）
-            result.arm_manual_allowed = false;
-            // op.bucket_arm_height は目標高さ[m]
-            result.arm_height_target  = op.bucket_arm_height;
-            result.arm_hold_target    = op.bucket_arm_hold ? 1.0f : 0.0f;
+            // ハンド操作：自動（Jetson operation からの司令値）
+            result.arm_height_target = op.bucket_arm_height;
+            result.arm_hold_target   = op.bucket_arm_hold ? 1.0f : 0.0f;
+            result.arm_width_target  = op.bucket_arm_width_extract ? 1.0f : 0.0f;
             break;
 
         case robot_config::NavigationStatus::Stanby:
         case robot_config::NavigationStatus::Fail:
         default:
-            // 完全手動モード
+            // 完全手動操縦モード
             result.chassis_vx   = teleop_vx;
             result.chassis_vy   = teleop_vy;
             result.chassis_vyaw = teleop_vyaw;
@@ -78,12 +80,11 @@ ArbitratedControl ControlArbitrator::arbitrate(
             result.belt_auto_velocity = false;
 
             // ハンド操作：手動
-            result.arm_manual_allowed = true;
-            result.arm_height_target  = teleop_arm_height;
-            result.arm_hold_target    = teleop_arm_hold;
+            result.arm_height_target = teleop_arm_height;
+            result.arm_hold_target   = teleop_arm_hold;
+            result.arm_width_target  = teleop_arm_width;
             break;
     }
 
     return result;
 }
-

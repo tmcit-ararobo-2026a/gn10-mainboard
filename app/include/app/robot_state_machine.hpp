@@ -6,7 +6,7 @@
 /**
  * @brief 機体の自動モード・ナビゲーション状態遷移マシン
  *
- * 状態遷移:
+ * 状態遷移 (PlantUML仕様):
  *  Standby (手動) --(通信・推定成功)--> Ready
  *  Ready          --(自動移動命令)--> Moving
  *  Moving         --(エラー/危険)--> Fail
@@ -18,6 +18,21 @@
  *  Tracking       --(追従終了)--> Ready
  *  Ready          --(自動移動不可)--> Fail
  *  Fail           --(復帰)--> Ready
+ *
+ * キーコンフィグ仕様 (teleop_key_config.md):
+ *  - モード切替: left_toggle_sw (0: 手動モード, 1: 自動モード)
+ *  - 自動モード時:
+ *      左十字キー:
+ *          上: FixedBucket1
+ *          右: FixedBucket2
+ *          下: FixedBucket3
+ *          左: StartZone
+ *      右十字キー:
+ *          上: Desk1
+ *          下: Desk2
+ *          左: Flag
+ *          右 (長押し): MovingBucket (Tracking)
+ *      左スティック押し込み: キャンセル / 停止
  */
 class RobotStateMachine
 {
@@ -33,7 +48,7 @@ public:
     void update(uint32_t now_ms, bool operation_received, const robot_config::operation_t& latest_op);
 
     /**
-     * @brief コントローラ入力によるコマンド更新
+     * @brief コントローラ入力によるコマンド・モード更新
      * @param teleop 現在のコントローラ入力
      * @param last_teleop 前回のコントローラ入力
      */
@@ -50,6 +65,11 @@ public:
     robot_config::NavigationStatus get_status() const { return current_status_; }
 
     /**
+     * @brief コントローラトグルスイッチによる自動モード有効フラグを取得
+     */
+    bool is_auto_mode_enabled() const { return is_auto_mode_; }
+
+    /**
      * @brief PC/Jetsonとの通信がタイムアウトしているか
      */
     bool is_operation_timeout() const { return operation_timeout_; }
@@ -60,25 +80,25 @@ public:
     void request_sleep()
     {
         command_.navigation_command = robot_config::NavigationCommand::Sleep;
-        current_status_ = robot_config::NavigationStatus::Stanby;
+        current_status_             = robot_config::NavigationStatus::Stanby;
     }
 
 private:
     static constexpr uint32_t OPERATION_TIMEOUT_MS = 200;
 
     robot_config::command_t command_{
-        .header = robot_config::header::command,
-        .sequence = 0,
-        .shutdown = false,
-        .localization = false,
-        .logging = false,
-        .target_id = robot_config::TargetId::StartZone,
+        .header             = robot_config::header::command,
+        .sequence           = 0,
+        .shutdown           = false,
+        .localization       = true, // 自己位置推定を常時有効化
+        .logging            = false,
+        .target_id          = robot_config::TargetId::StartZone,
         .navigation_command = robot_config::NavigationCommand::Sleep,
-        .cloth_collect = false,
+        .cloth_collect      = false,
     };
 
     robot_config::NavigationStatus current_status_ = robot_config::NavigationStatus::Stanby;
-    uint32_t last_operation_received_ms_ = 0;
-    bool operation_timeout_ = false;
+    uint32_t last_operation_received_ms_           = 0;
+    bool operation_timeout_                        = false;
+    bool is_auto_mode_                             = false;
 };
-

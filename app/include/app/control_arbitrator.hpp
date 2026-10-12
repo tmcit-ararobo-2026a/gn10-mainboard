@@ -18,16 +18,19 @@ struct ArbitratedControl {
     // ベルト射出トリガー
     bool belt_fire_trigger = false;
 
+    // エアシリンダ射出トリガー
+    bool air_fire_trigger = false;
+
     // アーム・ハンド操作
-    bool arm_manual_allowed = false; // 手動操作を許可するか
     float arm_height_target = 0.0f;
     float arm_hold_target = 0.0f;
+    float arm_width_target = 0.0f;
 };
 
 /**
  * @brief 状態機械のステータスに応じた操作権限（手動 vs 自動 vs 不可）の調停クラス
  *
- * 権限マッピング:
+ * 仕様 (teleop_key_config.md & PlantUML):
  *  Standby:  移動:手動 | 射出:手動 | 威力:手動 | ハンド:手動
  *  Ready:    移動:手動 | 射出:手動 | 威力:手動 | ハンド:自動
  *  Moving:   移動:自動 | 射出:手動 | 威力:自動 | ハンド:不可(ロック)
@@ -45,9 +48,10 @@ public:
         float teleop_vx,
         float teleop_vy,
         float teleop_vyaw,
-        bool teleop_fire_pressed,
+        bool belt_fire_trigger,
+        bool air_fire_trigger,
         float teleop_arm_height,
-        float teleop_arm_hold
+        float teleop_arm_hold,
+        float teleop_arm_width
     );
 };
-

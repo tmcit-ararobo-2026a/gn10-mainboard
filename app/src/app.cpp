@@ -132,6 +132,9 @@ struct AirLauncherStorage {
     bool storaging;
 };
 AirLauncherStorage air_launcher[2];
+// アーム手動トグル状態
+bool manual_arm_width_extract = false;
+bool manual_arm_hold          = false;
 
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
@@ -194,7 +197,9 @@ void packet_led_information_data()
  */
 void command_robot_drivers()
 {
-    // --- 1. 手動操作入力（Teleop）の正規化 ---
+    const bool is_auto_mode = state_machine.is_auto_mode_enabled();
+
+    // --- 1. 足回り手動入力（全モード共通: 左右アナログスティック） ---
     const float teleop_vx =
         std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
         LINER_VELOCITY_MAX;
@@ -205,21 +210,42 @@ void command_robot_drivers()
         std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
         ANGULAR_VELOCITY_MAX;
 
-    // 手動射出トリガー（左下ボタンが押されていない状態で、右右ボタンが押された瞬間）
-    const bool teleop_fire_trigger =
-        !teleop.buttons.left_down &&
-        (teleop.buttons.right_right && !last_teleop.buttons.right_right);
+    // --- 2. 射出トリガー（全モード共通: L1 / R1 スイッチ） ---
+    // right_trigger: ベルト直動射出 (押下エッジ)
+    const bool belt_fire_trigger = teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
+    // left_trigger: エアシリンダ射出 (押下エッジ)
+    const bool air_fire_trigger = teleop.buttons.left_trigger && !last_teleop.buttons.left_trigger;
 
-    // 手動アーム操作入力
+    // --- 3. 手動モード時のアクチュエータ入力処理 (teleop_key_config.md 第3.1項) ---
     float teleop_arm_height = 0.0f;
     float teleop_arm_hold   = 0.0f;
-    if (teleop.buttons.left_down) {
+    float teleop_arm_width  = 0.0f;
+
+    if (!is_auto_mode) {
+        // 左十字キー 上/下: バケツ用アーム昇降
         teleop_arm_height =
-            bucket_arm.height_motor_output(teleop.buttons.right_up, teleop.buttons.right_down);
-        teleop_arm_hold = bucket_arm.hold_motor_output(teleop.buttons.right_right);
+            bucket_arm.height_motor_output(teleop.buttons.left_up, teleop.buttons.left_down);
+
+        // 左十字キー 左: アーム展開 / 収納トグル
+        if (teleop.buttons.left_left && !last_teleop.buttons.left_left) {
+            manual_arm_width_extract = !manual_arm_width_extract;
+        }
+        teleop_arm_width = manual_arm_width_extract ? 1.0f : 0.0f;
+
+        // 左十字キー 右: ハンド把持 / 解放トグル
+        if (teleop.buttons.left_right && !last_teleop.buttons.left_right) {
+            manual_arm_hold = !manual_arm_hold;
+        }
+        teleop_arm_hold = manual_arm_hold ? 1.0f : 0.0f;
+
+        // 右十字キー 上/下: ベルト速度微調整
+        belt_launcher_controller.update_velocity(
+            teleop.buttons.right_up && !last_teleop.buttons.right_up,
+            teleop.buttons.right_down && !last_teleop.buttons.right_down
+        );
     }
 
-    // --- 2. 操作権限の調停 (Arbitration) ---
+    // --- 4. 操作権限の調停 (Arbitration) ---
     const ArbitratedControl ctrl = ControlArbitrator::arbitrate(
         state_machine.get_status(),
         teleop,
@@ -227,12 +253,14 @@ void command_robot_drivers()
         teleop_vx,
         teleop_vy,
         teleop_vyaw,
-        teleop_fire_trigger,
+        belt_fire_trigger,
+        air_fire_trigger,
         teleop_arm_height,
-        teleop_arm_hold
+        teleop_arm_hold,
+        teleop_arm_width
     );
 
-    // --- 3. 足回り（オムニ）出力 ---
+    // --- 5. 足回り（オムニ）出力 ---
     constexpr float robot_yaw_angle = 0.0f;
     omni.convert(-ctrl.chassis_vx, ctrl.chassis_vy, ctrl.chassis_vyaw, robot_yaw_angle);
     float front = 0.0f, right = 0.0f, left = 0.0f;
@@ -242,21 +270,19 @@ void command_robot_drivers()
     };
     esc_wheel.set_targets(wheel_targets.data());
 
-    // --- 4. ベルト直動 ---
+    // --- 6. ベルト直動 ---
+    // 右スティック押し込み: ベルト直動初期化 (全モード共通)
     if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
         belt_launcher_controller.set_deinit();
         belt_launcher_client.set_init();
     }
+
     if (ctrl.belt_auto_velocity) {
         belt_launcher_controller.set_velocity(ctrl.belt_launcher_target_velocity);
-    } else if (!teleop.buttons.left_down) {
-        belt_launcher_controller.update_velocity(
-            teleop.buttons.right_up && !last_teleop.buttons.right_up,
-            teleop.buttons.right_down && !last_teleop.buttons.right_down
-        );
     }
     led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
 
+    // 射出実行
     if (ctrl.belt_fire_trigger) {
         float belt_launcher_target_vel = 0.0f;
         if (belt_launcher_controller.fire(
@@ -268,20 +294,18 @@ void command_robot_drivers()
     }
     led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
 
-    // エア射出
+    // --- 7. エアシリンダ制御 ---
     const uint32_t now_ms = HAL_GetTick();
     std::array<bool, 8> solenoid_targets{};
-    solenoid_targets[0] = 1;                          // 空圧レギュレータ電源用
-    solenoid_targets[1] = teleop.buttons.left_right;  // 机右
-    solenoid_targets[2] = teleop.buttons.left_left;   // 机左
-    if (!teleop.buttons.left_right && last_teleop.buttons.left_right) {
+    solenoid_targets[0] = 1;  // 空圧レギュレータ電源用
+
+    // L1トリガーで射出（現在は机右エアシリンダ[1]を作動）
+    if (ctrl.air_fire_trigger) {
+        solenoid_targets[1]               = true;
         air_launcher[0].last_fire_tick_ms = now_ms;
         air_launcher[0].fired             = true;
     }
-    if (!teleop.buttons.left_left && last_teleop.buttons.left_left) {
-        air_launcher[1].last_fire_tick_ms = now_ms;
-        air_launcher[1].fired             = true;
-    }
+
     for (uint32_t i = 0; i < 2; i++) {
         if (air_launcher[i].fired) {
             uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
@@ -302,16 +326,13 @@ void command_robot_drivers()
     solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
     solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
 
-    if (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]) {
-        led_info.air_injection = true;
-    } else {
-        led_info.air_injection = false;
-    }
+    led_info.air_injection = (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]);
     solenoid.set_target(solenoid_targets);
 
-    // --- 6. バケツ用アーム ---
+    // --- 8. バケツ用アーム ---
     float arm_height_target                  = ctrl.arm_height_target;
     arm_hold_and_loading_and_width_target[1] = ctrl.arm_hold_target;
+    arm_hold_and_loading_and_width_target[3] = ctrl.arm_width_target;
 
     // 装填
     belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[2], now_ms);
