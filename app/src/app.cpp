@@ -327,6 +327,7 @@ void receive_and_process_feedbacks()
     float belt_launcher_feedback_vel{};
     if (belt_launcher_client.get_velocity_feedback(belt_launcher_feedback_vel)) {
         robot_feedback.belt_launcher_velocity = belt_launcher_feedback_vel;
+        serial_printf("target-erpm:%f\n", robot_feedback.belt_launcher_velocity);
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
@@ -335,6 +336,7 @@ void receive_and_process_feedbacks()
     float belt_release_point_velocity{};
     if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
         robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
+        serial_printf("release_velocity%f\n", robot_feedback.last_belt_launcher_release_velocity);
     }
     gn10_can::devices::power_manager::Status drive_power_status{};
     if (drive_power_manager.get_new_status(drive_power_status)) {
