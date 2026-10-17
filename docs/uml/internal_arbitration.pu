@@ -1,0 +1,35 @@
+@startuml internal_arbitration
+skinparam componentStyle uml2
+
+package "入力インターフェース" {
+    [Teleop (UDP:10410)] as InTeleop
+    [Operation (UDP:39244)] as InOperation
+}
+
+package "メイン基板 コア処理" {
+    component "RobotStateMachine" as FSM
+    component "ControlArbitrator\n(操作権限調停)" as Arbitrator
+}
+
+package "アクチュエータ出力 (CAN/GPIO)" {
+    [3輪オムニ足回り (C620)] as Wheel
+    [ベルト直動射出 (VESC)] as Belt
+    [バケツアーム (DC/C610)] as Arm
+    [エアシリンダ (Solenoid)] as Air
+}
+
+InTeleop --> FSM : モード切替(Toggle SW)\nTargetId選択(十字キー)\nキャンセル(Stick Push)
+InOperation --> FSM : NavigationStatus 同期\n(タイムアウト監視: 200ms)
+
+FSM --> [Command (UDP:26574)] : command_t 送信
+
+InTeleop --> Arbitrator : 手動操作指令
+InOperation --> Arbitrator : 自動制御指令 (vel, arm, belt)
+FSM --> Arbitrator : 現在のNavigationStatus
+
+Arbitrator --> Wheel : vx, vy, vyaw
+Arbitrator --> Belt : 威力(手動/自動) & 射出トリガー(R1)
+Arbitrator --> Arm : 昇降・展開・把持(手動/自動/ロック)
+Arbitrator --> Air : 射出トリガー(L1)
+@enduml
+
