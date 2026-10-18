@@ -54,8 +54,10 @@ constexpr float BUCKET_ARM_RELEASE_FORCE        = 0.8f;    // [A]
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
+// エアシリンダを射出する際の開放時間[ms]
+constexpr uint32_t AIR_FIRE_LENGTH_MS = 300;
 // エアシリンダを収納する際の開放時間[ms]
-constexpr uint32_t AIR_STORAGE_LENGTH_MS = 500;
+constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 500;
 constexpr uint32_t AIR_LAUNCHER_RIGHT_INDEX = 0;
 constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
@@ -133,8 +135,8 @@ AirLauncherStorage air_launcher[2];
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
 robot_config::teleop_t last_teleop{};
-uint32_t last_teleop_received_ms = 0;
-bool teleop_timeout              = false;
+uint32_t last_teleop_received_ms     = 0;
+bool teleop_timeout                  = false;
 uint32_t selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
 
 /* --------------------- 状態管理・PCとの通信 -----------------------------*/
@@ -302,7 +304,7 @@ void command_robot_drivers()
 
     // L1トリガーで選択中のエアシリンダを射出
     if (ctrl.air_fire_trigger) {
-        const uint32_t solenoid_index = selected_air_launcher_index + 1;
+        const uint32_t solenoid_index    = selected_air_launcher_index + 1;
         solenoid_targets[solenoid_index] = true;
         air_launcher[selected_air_launcher_index].last_fire_tick_ms = now_ms;
         air_launcher[selected_air_launcher_index].fired             = true;
@@ -311,7 +313,7 @@ void command_robot_drivers()
     for (uint32_t i = 0; i < 2; i++) {
         if (air_launcher[i].fired) {
             uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
-            if (elapsed_time_ms > AIR_STORAGE_DELAY_MS) {
+            if (elapsed_time_ms > AIR_FIRE_LENGTH_MS + AIR_STORAGE_DELAY_MS) {
                 air_launcher[i].fired                   = false;
                 air_launcher[i].storaging               = true;
                 air_launcher[i].start_storaging_tick_ms = now_ms;
@@ -324,6 +326,7 @@ void command_robot_drivers()
                 air_launcher[i].storaging = false;
             }
         }
+        solenoid_targets[i + 1] = (uint8_t)air_launcher[i].fired;
     }
     solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
     solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
