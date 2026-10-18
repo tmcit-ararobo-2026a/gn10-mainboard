@@ -52,11 +52,11 @@ constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
-constexpr uint32_t AIR_STORAGE_DELAY_MS = 600;
+constexpr uint32_t AIR_STORAGE_DELAY_MS = 800;
 // エアシリンダを射出する際の開放時間[ms]
 constexpr uint32_t AIR_FIRE_LENGTH_MS = 100;
 // エアシリンダを収納する際の開放時間[ms]
-constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 300;
+constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 400;
 constexpr uint32_t AIR_LAUNCHER_RIGHT_INDEX = 0;
 constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
