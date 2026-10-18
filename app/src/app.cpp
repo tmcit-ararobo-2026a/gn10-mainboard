@@ -465,7 +465,7 @@ void setup()
     motor_config_loading.set_max_duty_ratio(10.0f);
     esc_arm_hold_and_loading_and_width.set_init(0, motor_config_loading);
     esc_arm_hold_and_loading_and_width.set_gains(
-        2, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
+        0, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
     );
 
     // バケツの横軸
