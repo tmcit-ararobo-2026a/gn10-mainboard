@@ -56,6 +56,8 @@ constexpr float BUCKET_ARM_RELEASE_FORCE        = 0.8f;    // [A]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
 // エアシリンダを収納する際の開放時間[ms]
 constexpr uint32_t AIR_STORAGE_LENGTH_MS = 500;
+constexpr uint32_t AIR_LAUNCHER_RIGHT_INDEX = 0;
+constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
@@ -133,6 +135,7 @@ robot_config::teleop_t teleop{};
 robot_config::teleop_t last_teleop{};
 uint32_t last_teleop_received_ms = 0;
 bool teleop_timeout              = false;
+uint32_t selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
 
 /* --------------------- 状態管理・PCとの通信 -----------------------------*/
 RobotStateMachine state_machine;
@@ -234,6 +237,13 @@ void command_robot_drivers()
             teleop.buttons.right_up && !last_teleop.buttons.right_up,
             teleop.buttons.right_down && !last_teleop.buttons.right_down
         );
+
+        // 右十字キー 左/右: 作動させるエアシリンダを選択
+        if (teleop.buttons.right_left && !last_teleop.buttons.right_left) {
+            selected_air_launcher_index = AIR_LAUNCHER_LEFT_INDEX;
+        } else if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {
+            selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
+        }
     }
 
     // --- 4. 操作権限の調停 (Arbitration) ---
@@ -290,11 +300,12 @@ void command_robot_drivers()
     std::array<bool, 8> solenoid_targets{};
     solenoid_targets[0] = 1;  // 空圧レギュレータ電源用
 
-    // L1トリガーで射出（現在は机右エアシリンダ[1]を作動）
+    // L1トリガーで選択中のエアシリンダを射出
     if (ctrl.air_fire_trigger) {
-        solenoid_targets[1]               = true;
-        air_launcher[0].last_fire_tick_ms = now_ms;
-        air_launcher[0].fired             = true;
+        const uint32_t solenoid_index = selected_air_launcher_index + 1;
+        solenoid_targets[solenoid_index] = true;
+        air_launcher[selected_air_launcher_index].last_fire_tick_ms = now_ms;
+        air_launcher[selected_air_launcher_index].fired             = true;
     }
 
     for (uint32_t i = 0; i < 2; i++) {

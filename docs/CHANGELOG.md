@@ -9,6 +9,7 @@
 ### 概要
 自動モード状態遷移（PlantUML仕様）およびキーコンフィグ（`teleop_key_config.md`）の実装、ならびに保守性向上のための調停アーキテクチャへのリファクタリングを実施。
 - 手動モードのアーム展開・収納およびハンド把持・解放を、押下エッジごとに一度だけ反転するトグル動作へ修正。
+- 手動モードの右十字キー左右を、L1で作動させるエアシリンダの左右選択に割り当て。
 
 ### 追加 (Added)
 - **`app/include/app/control_arbitrator.hpp` / `app/src/control_arbitrator.cpp`**:
