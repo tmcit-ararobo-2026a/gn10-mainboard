@@ -43,7 +43,7 @@ constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.00f;  // [m/(s*V)]
 constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f * RELOAD_ANGLE_ADJUST;
 constexpr uint32_t RELOAD_DELAY_MS  = 1200;
-constexpr float RELOAD_PID_GAINS[3] = {-1.5f, 0.0f, 0.0f};
+constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.1f};
 // バケツ用アーム
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
@@ -53,7 +53,7 @@ constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]（記入なし
 constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]（記入なし）
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
-constexpr float BUCKET_PID_GAINS[3]             = {1.0f, 0.0f, 0.0f};
+constexpr float BUCKET_WIDTH_PID_GAINS[3]       = {1.0f, 0.0f, 0.0f};
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
@@ -212,7 +212,8 @@ void command_robot_drivers()
 
     // --- 2. 射出トリガー（全モード共通: L1 / R1 スイッチ） ---
     // right_trigger: ベルト直動射出 (押下エッジ)
-    const bool belt_fire_trigger = teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
+    const bool belt_fire_trigger =
+        teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
     // left_trigger: エアシリンダ射出 (押下エッジ)
     const bool air_fire_trigger = teleop.buttons.left_trigger && !last_teleop.buttons.left_trigger;
 
@@ -332,10 +333,10 @@ void command_robot_drivers()
     // --- 8. バケツ用アーム ---
     float arm_height_target                  = ctrl.arm_height_target;
     arm_hold_and_loading_and_width_target[1] = ctrl.arm_hold_target;
-    arm_hold_and_loading_and_width_target[3] = ctrl.arm_width_target;
+    arm_hold_and_loading_and_width_target[2] = ctrl.arm_width_target;
 
     // 装填
-    belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[2], now_ms);
+    belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
 
     // CAN通信
     esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data());
@@ -375,12 +376,12 @@ void receive_and_process_feedbacks()
 
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
-        robot_feedback.loading_belt_angle = loading_feedback[2];
+        robot_feedback.loading_belt_angle = loading_feedback[0];
         // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
         if (robot_feedback.emergency_stop_enabled) {
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
-        bucket_arm.set_width_motor_angle(loading_feedback[3]);
+        bucket_arm.set_width_motor_angle(loading_feedback[2]);
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
@@ -468,23 +469,24 @@ void setup()
         esc_wheel.set_init(i, motor_config_wheel);
         esc_wheel.set_gains(i, WHEEL_PID_GAINS[0], WHEEL_PID_GAINS[1], WHEEL_PID_GAINS[2], 0.0f);
     }
-    esc_arm_hold_and_loading_and_width.set_init(1, motor_config_hand);
-
+    // 装填
     motor_config_loading.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_loading.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
     motor_config_loading.set_max_duty_ratio(10.0f);
-    esc_arm_hold_and_loading_and_width.set_init(2, motor_config_loading);
+    esc_arm_hold_and_loading_and_width.set_init(0, motor_config_loading);
     esc_arm_hold_and_loading_and_width.set_gains(
         2, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
     );
 
+    // 雑巾保持
+    esc_arm_hold_and_loading_and_width.set_init(1, motor_config_hand);
     // バケツの横軸
     motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
     motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
-    esc_arm_hold_and_loading_and_width.set_init(3, motor_config_arm_width);
+    esc_arm_hold_and_loading_and_width.set_init(2, motor_config_arm_width);
     esc_arm_hold_and_loading_and_width.set_gains(
-        3, BUCKET_PID_GAINS[0], BUCKET_PID_GAINS[1], BUCKET_PID_GAINS[2], 0.0f
+        3, BUCKET_WIDTH_PID_GAINS[0], BUCKET_WIDTH_PID_GAINS[1], BUCKET_WIDTH_PID_GAINS[2], 0.0f
     );  // 位置制御用PIDゲイン
 
     dc_arm_height.set_init(motor_config_arm_height);
