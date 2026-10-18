@@ -40,8 +40,7 @@ constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
 constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.00f;  // [m/(s*V)]
 // 装填機構
-constexpr float RELOAD_ANGLE_ADJUST = 0.9690f;
-constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f * RELOAD_ANGLE_ADJUST;
+constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f;
 constexpr uint32_t RELOAD_DELAY_MS  = 1200;
 constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.1f};
 // バケツ用アーム

@@ -28,9 +28,9 @@ float BucketArmController::width_motor_output(bool input)
     prev_input_ = input;
     // 出力へ変換
     if (width_expand_) {
-        return width_speed_ratio_;
-    } else {
         return -width_speed_ratio_;
+    } else {
+        return width_speed_ratio_;
     }
 }
 
