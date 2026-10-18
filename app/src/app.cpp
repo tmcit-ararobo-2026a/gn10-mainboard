@@ -49,7 +49,7 @@ constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
 constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 2.0f;    // [A]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
-constexpr float BUCKET_ARM_RELEASE_FORCE        = 0.8f;    // [A]
+constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 600;
@@ -335,8 +335,8 @@ void command_robot_drivers()
 
     // --- 8. バケツ用アーム ---
     float arm_height_target                  = ctrl.arm_height_target;
-    arm_hold_and_loading_and_width_target[1] = ctrl.arm_hold_target;
-    arm_hold_and_loading_and_width_target[2] = ctrl.arm_width_target;
+    arm_hold_and_loading_and_width_target[1] = ctrl.arm_width_target;
+    arm_hold_and_loading_and_width_target[2] = ctrl.arm_hold_target;
 
     // 装填
     belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
