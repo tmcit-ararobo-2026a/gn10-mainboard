@@ -48,12 +48,9 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.1f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
-constexpr float BUCKET_ARM_WIDTH_PULLEY_RADIUS  = 0.0f;    // [m]（記入なし）
-constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]（記入なし）
-constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]（記入なし）
-constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
-constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
-constexpr float BUCKET_WIDTH_PID_GAINS[3]       = {1.0f, 0.0f, 0.0f};
+constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 2.0f;    // [A]
+constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
+constexpr float BUCKET_ARM_RELEASE_FORCE        = 0.8f;    // [A]
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
@@ -120,9 +117,7 @@ BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS,
     BUCKET_ARM_HEIGHT_MAX,
     BUCKET_ARM_HEIGHT_MIN,
-    BUCKET_ARM_WIDTH_PULLEY_RADIUS,
-    BUCKET_ARM_WIDTH_MAX,
-    BUCKET_ARM_WIDTH_MIN
+    BUCKET_ARM_WIDTH_SPEED_RATIO
 );
 // エアシリンダ
 struct AirLauncherStorage {
@@ -132,9 +127,6 @@ struct AirLauncherStorage {
     bool storaging;
 };
 AirLauncherStorage air_launcher[2];
-// アーム手動トグル状態
-bool manual_arm_width_extract = false;
-bool manual_arm_hold          = false;
 
 /* --------------------- コントローラー（teleop）との通信 ---------------------*/
 robot_config::teleop_t teleop{};
@@ -228,16 +220,14 @@ void command_robot_drivers()
             bucket_arm.height_motor_output(teleop.buttons.left_up, teleop.buttons.left_down);
 
         // 左十字キー 左: アーム展開 / 収納トグル
-        if (teleop.buttons.left_left && !last_teleop.buttons.left_left) {
-            manual_arm_width_extract = !manual_arm_width_extract;
-        }
-        teleop_arm_width = manual_arm_width_extract ? 1.0f : 0.0f;
+        teleop_arm_width = bucket_arm.width_motor_output(
+            teleop.buttons.left_left && !last_teleop.buttons.left_left
+        );
 
         // 左十字キー 右: ハンド把持 / 解放トグル
-        if (teleop.buttons.left_right && !last_teleop.buttons.left_right) {
-            manual_arm_hold = !manual_arm_hold;
-        }
-        teleop_arm_hold = manual_arm_hold ? 1.0f : 0.0f;
+        teleop_arm_hold = bucket_arm.hold_motor_output(
+            teleop.buttons.left_right && !last_teleop.buttons.left_right
+        );
 
         // 右十字キー 上/下: ベルト速度微調整
         belt_launcher_controller.update_velocity(
@@ -381,7 +371,6 @@ void receive_and_process_feedbacks()
         if (robot_feedback.emergency_stop_enabled) {
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
-        bucket_arm.set_width_motor_angle(loading_feedback[2]);
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
@@ -443,20 +432,7 @@ void setup()
     motor_config_wheel.set_max_duty_ratio(20.0f);
     motor_config_wheel.set_accel_ratio(1.0f);
 
-    motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);  // 電流制御
-
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
-
-    motor_config_arm_height.set_max_duty_ratio(0.75f);
-    motor_config_arm_height.set_reverse_limit_switch(true, 0);
-    motor_config_arm_height.set_motor_type(gn10_can::devices::MotorType::DC);
-    motor_config_arm_height.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-    motor_config_arm_height.set_feedback_cycle(10);
-
-    motor_config_arm_width.set_max_duty_ratio(0.75f);
-    motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
 
     // Other device configuration
     drive_power_manager_config.sensor_rate_ms            = 30;
@@ -478,18 +454,26 @@ void setup()
         2, RELOAD_PID_GAINS[0], RELOAD_PID_GAINS[1], RELOAD_PID_GAINS[2], 0.0f
     );
 
-    // 雑巾保持
-    esc_arm_hold_and_loading_and_width.set_init(1, motor_config_hand);
     // バケツの横軸
+    motor_config_arm_width.set_max_duty_ratio(1.0f);
     motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
-
-    esc_arm_hold_and_loading_and_width.set_init(2, motor_config_arm_width);
-    esc_arm_hold_and_loading_and_width.set_gains(
-        3, BUCKET_WIDTH_PID_GAINS[0], BUCKET_WIDTH_PID_GAINS[1], BUCKET_WIDTH_PID_GAINS[2], 0.0f
-    );  // 位置制御用PIDゲイン
-
+    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::None);
+    motor_config_arm_width.set_forward_limit_switch(true, 0);
+    motor_config_arm_width.set_reverse_limit_switch(true, 1);
+    esc_arm_hold_and_loading_and_width.set_init(1, motor_config_arm_width);
+    // 雑巾保持
+    motor_config_hand.set_max_duty_ratio(1.0f);
+    motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
+    motor_config_hand.set_encoder_type(gn10_can::devices::EncoderType::None);  // 電流制御
+    esc_arm_hold_and_loading_and_width.set_init(2, motor_config_hand);
+    // 高さ調整
+    motor_config_arm_height.set_max_duty_ratio(0.75f);
+    motor_config_arm_height.set_reverse_limit_switch(true, 0);
+    motor_config_arm_height.set_motor_type(gn10_can::devices::MotorType::DC);
+    motor_config_arm_height.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+    motor_config_arm_height.set_feedback_cycle(10);
     dc_arm_height.set_init(motor_config_arm_height);
+
     solenoid.set_init();
     drive_power_manager.set_init(drive_power_manager_config);
     logic_power_manager.set_init(logic_power_manager_config);
@@ -498,7 +482,6 @@ void setup()
     ether.init();
 
     bucket_arm.set_height_adjustment_velocity_ratio(1.0f);
-    bucket_arm.set_width_adjustment_velocity_ratio(1.0f);
     bucket_arm.set_hold_force_by_current(BUCKET_ARM_HOLD_FORCE);
     bucket_arm.set_release_force_by_current(BUCKET_ARM_RELEASE_FORCE);
 
