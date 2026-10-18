@@ -19,19 +19,18 @@ float BucketArmController::height_motor_output(bool up, bool down) const
     return 0.0f;
 }
 
-float BucketArmController::width_motor_output(bool left, bool right) const
+float BucketArmController::width_motor_output(bool input)
 {
-    const float max_angle = (width_max_ - width_min_) / width_pulley_radius_;
-    if (left == right) {
-        return 0.0f;
+    // トグル動作
+    if (!prev_input_ && input) {
+        width_expand_ = !width_expand_;
     }
-    if (left) {
-        return -width_adjustment_velocity_ratio_;
+    // 出力へ変換
+    if (width_expand_) {
+        return width_speed_ratio_;
+    } else {
+        return -width_speed_ratio_;
     }
-    if (right && width_motor_angle_ < max_angle) {
-        return width_adjustment_velocity_ratio_;
-    }
-    return 0.0f;
 }
 
 float BucketArmController::hold_motor_output(bool hold) const

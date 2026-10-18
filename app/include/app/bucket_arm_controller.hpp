@@ -9,19 +9,12 @@ class BucketArmController
 {
 public:
     BucketArmController(
-        float height_pulley_radius,
-        float height_max,
-        float height_min,
-        float width_pulley_radius,
-        float width_max,
-        float width_min
+        float height_pulley_radius, float height_max, float height_min, float width_speed_ratio
     )
         : height_pulley_radius_(height_pulley_radius),
           height_max_(height_max),
           height_min_(height_min),
-          width_pulley_radius_(width_pulley_radius),
-          width_max_(width_max),
-          width_min_(width_min) {};
+          width_speed_ratio_(width_speed_ratio) {};
 
     /**
      * @brief 高さ調節の速度比率設定
@@ -31,16 +24,6 @@ public:
     void set_height_adjustment_velocity_ratio(float velocity_ratio)
     {
         height_adjustment_velocity_ratio_ = velocity_ratio;
-    }
-
-    /**
-     * @brief 左右移動の速度比率設定
-     *
-     * @param velocity_ratio
-     */
-    void set_width_adjustment_velocity_ratio(float velocity_ratio)
-    {
-        width_adjustment_velocity_ratio_ = velocity_ratio;
     }
 
     /**
@@ -72,15 +55,6 @@ public:
     {
         height_motor_angle_ = angle_rad;
     }
-    /**
-     * @brief Set the width motor angle object
-     *
-     * @param angle_rad 回転角[rad]
-     */
-    void set_width_motor_angle(float angle_rad)
-    {
-        width_motor_angle_ = angle_rad;
-    }
 
     /**
      * @brief 高さ[m]を回転角[rad]に変換[
@@ -93,19 +67,6 @@ public:
     {
         if (height_pulley_radius_ > 0.0f) {
             return (height_max_ - height_m) / height_pulley_radius_;
-        }
-        return 0.0f;
-    }
-    /**
-     * @brief　横幅[m]を回転角に変換
-     *
-     * @param width_m 幅[m]
-     * @return float 回転角[rad]
-     */
-    float width_to_angle(float width_m) const
-    {
-        if (width_pulley_radius_ > 0.0f) {
-            return (width_max_ - width_m) / width_pulley_radius_;
         }
         return 0.0f;
     }
@@ -122,17 +83,6 @@ public:
     }
 
     /**
-     * @brief
-     *
-     * @param angle_rad 回転角[rad](最大展開を0として戻す方向を+)
-     * @return float　高さ[m](最初の取り付け位置を0として左方向を+)
-     */
-    float angle_to_width(float angle_rad) const
-    {
-        return width_max_ - (angle_rad * width_pulley_radius_);
-    }
-
-    /**
      * @brief 高さ調整用モーター出力を計算
      *
      * @param up 上昇
@@ -144,11 +94,10 @@ public:
     /**
      * @brief
      *
-     * @param left 左移動
-     * @param right 幹移動
+     * @param input トグル動作用の入力信号（trueになる立ち上がりで毎回展開収納を切り替える）
      * @return float 左右の移動調節モーターの出力[ratio]
      */
-    float width_motor_output(bool left, bool right) const;
+    float width_motor_output(bool input);
 
     /**
      * @brief ハンド保持用モーターの出力を計算
@@ -162,13 +111,11 @@ private:
     float height_pulley_radius_{};
     float height_max_{};
     float height_min_{};
-    float width_pulley_radius_{};
-    float width_max_{};
-    float width_min_{};
     float height_adjustment_velocity_ratio_{};
-    float width_adjustment_velocity_ratio_{};
     float hold_current_{};
     float release_current_{};
     float height_motor_angle_{};
-    float width_motor_angle_{};
+    float width_speed_ratio_{};
+    bool width_expand_{};  // true:展開
+    bool prev_input_{};
 };

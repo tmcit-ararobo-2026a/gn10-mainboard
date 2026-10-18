@@ -48,12 +48,9 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.1f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
-constexpr float BUCKET_ARM_WIDTH_PULLEY_RADIUS  = 0.0f;    // [m]（記入なし）
-constexpr float BUCKET_ARM_WIDTH_MAX            = 0.0f;    // [m]（記入なし）
-constexpr float BUCKET_ARM_WIDTH_MIN            = 0.0f;    // [m]（記入なし）
+constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 2.0;     // [A]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.4f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
-constexpr float BUCKET_WIDTH_PID_GAINS[3]       = {1.0f, 0.0f, 0.0f};
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
 constexpr uint32_t AIR_STORAGE_DELAY_MS = 500;
@@ -120,9 +117,7 @@ BucketArmController bucket_arm(
     BUCKET_ARM_HEIGHT_PULLEY_RADIUS,
     BUCKET_ARM_HEIGHT_MAX,
     BUCKET_ARM_HEIGHT_MIN,
-    BUCKET_ARM_WIDTH_PULLEY_RADIUS,
-    BUCKET_ARM_WIDTH_MAX,
-    BUCKET_ARM_WIDTH_MIN
+    BUCKET_ARM_WIDTH_SPEED_RATIO
 );
 // エアシリンダ
 struct AirLauncherStorage {
@@ -381,7 +376,6 @@ void receive_and_process_feedbacks()
         if (robot_feedback.emergency_stop_enabled) {
             belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
         }
-        bucket_arm.set_width_motor_angle(loading_feedback[2]);
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
@@ -482,12 +476,11 @@ void setup()
     esc_arm_hold_and_loading_and_width.set_init(1, motor_config_hand);
     // バケツの横軸
     motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::IncrementalTotal);
+    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::None);
+    motor_config_arm_width.set_forward_limit_switch(true, 0);
+    motor_config_arm_width.set_reverse_limit_switch(true, 1);
 
     esc_arm_hold_and_loading_and_width.set_init(2, motor_config_arm_width);
-    esc_arm_hold_and_loading_and_width.set_gains(
-        3, BUCKET_WIDTH_PID_GAINS[0], BUCKET_WIDTH_PID_GAINS[1], BUCKET_WIDTH_PID_GAINS[2], 0.0f
-    );  // 位置制御用PIDゲイン
 
     dc_arm_height.set_init(motor_config_arm_height);
     solenoid.set_init();
@@ -498,7 +491,6 @@ void setup()
     ether.init();
 
     bucket_arm.set_height_adjustment_velocity_ratio(1.0f);
-    bucket_arm.set_width_adjustment_velocity_ratio(1.0f);
     bucket_arm.set_hold_force_by_current(BUCKET_ARM_HOLD_FORCE);
     bucket_arm.set_release_force_by_current(BUCKET_ARM_RELEASE_FORCE);
 
