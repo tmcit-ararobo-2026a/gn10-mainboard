@@ -8,6 +8,7 @@
 
 ### 概要
 自動モード状態遷移（PlantUML仕様）およびキーコンフィグ（`teleop_key_config.md`）の実装、ならびに保守性向上のための調停アーキテクチャへのリファクタリングを実施。
+- 手動モードのアーム展開・収納およびハンド把持・解放を、押下エッジごとに一度だけ反転するトグル動作へ修正。
 
 ### 追加 (Added)
 - **`app/include/app/control_arbitrator.hpp` / `app/src/control_arbitrator.cpp`**:
@@ -31,6 +32,7 @@
   - `loop()` 周期内で `ether.send_command_data()` を 50ms 周期で定期送信するように追加。
 - **`app/src/bucket_arm_controller.cpp`**:
   - `width_motor_output()` で戻り値が抜けていたコンパイル警告を修正。
+  - 展開・収納の前回入力を保存し、押下中の周期ごとの誤反転を防止。
+  - ハンド把持・解放も押下エッジによるトグル動作に統一。
 - **`app/CMakeLists.txt`**:
   - `app` 静的ライブラリのビルド対象に `robot_state_machine.cpp` と `control_arbitrator.cpp` を追加。
-

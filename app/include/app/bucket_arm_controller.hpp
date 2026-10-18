@@ -100,12 +100,12 @@ public:
     float width_motor_output(bool input);
 
     /**
-     * @brief ハンド保持用モーターの出力を計算
+     * @brief ハンド保持状態を切り替えてモーター出力を計算
      *
-     * @param hold 保持するかどうか
-     * @return float ハンドのモーター出力(保持を+、開放を-)
+     * @param input トグル動作用の入力信号（trueになる立ち上がりで毎回保持・開放を切り替える）
+     * @return float ハンドのモーター出力(保持を-、開放を+)
      */
-    float hold_motor_output(bool hold) const;
+    float hold_motor_output(bool input);
 
 private:
     float height_pulley_radius_{};
@@ -118,4 +118,6 @@ private:
     float width_speed_ratio_{};
     bool width_expand_{};  // true:展開
     bool prev_input_{};
+    bool hold_{};
+    bool prev_hold_input_{};
 };

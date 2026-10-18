@@ -25,6 +25,7 @@ float BucketArmController::width_motor_output(bool input)
     if (!prev_input_ && input) {
         width_expand_ = !width_expand_;
     }
+    prev_input_ = input;
     // 出力へ変換
     if (width_expand_) {
         return width_speed_ratio_;
@@ -33,9 +34,15 @@ float BucketArmController::width_motor_output(bool input)
     }
 }
 
-float BucketArmController::hold_motor_output(bool hold) const
+float BucketArmController::hold_motor_output(bool input)
 {
-    if (hold) {
+    // トグル動作
+    if (!prev_hold_input_ && input) {
+        hold_ = !hold_;
+    }
+    prev_hold_input_ = input;
+
+    if (hold_) {
         return -hold_current_;
     } else {
         return release_current_;
