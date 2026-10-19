@@ -188,232 +188,6 @@ void packet_led_information_data()
     led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
 }
 
-/**
- * @brief ロボット司令より各アクチュエータに司令を送る
- */
-void command_robot_drivers()
-{
-    const bool is_auto_mode = state_machine.is_auto_mode_enabled();
-
-    // --- 1. 足回り手動入力（全モード共通: 左右アナログスティック） ---
-    const float teleop_vx =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    const float teleop_vy =
-        std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
-        LINER_VELOCITY_MAX;
-    const float teleop_vyaw =
-        std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
-        ANGULAR_VELOCITY_MAX;
-
-    // --- 2. 射出トリガー（全モード共通: L1 / R1 スイッチ） ---
-    // right_trigger: ベルト直動射出 (押下エッジ)
-    const bool belt_fire_trigger =
-        teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
-    // left_trigger: エアシリンダ射出 (押下エッジ)
-    const bool air_fire_trigger = teleop.buttons.left_trigger && !last_teleop.buttons.left_trigger;
-
-    // --- 3. 手動モード時のアクチュエータ入力処理 (teleop_key_config.md 第3.1項) ---
-    float teleop_arm_height = 0.0f;
-    float teleop_arm_hold   = 0.0f;
-    float teleop_arm_width  = 0.0f;
-
-    if (!is_auto_mode) {
-        // 左十字キー 上/下: バケツ用アーム昇降
-        teleop_arm_height =
-            bucket_arm.height_motor_output(teleop.buttons.left_up, teleop.buttons.left_down);
-
-        // 左十字キー 左: アーム展開 / 収納トグル
-        teleop_arm_width = bucket_arm.width_motor_output(
-            teleop.buttons.left_left && !last_teleop.buttons.left_left
-        );
-
-        // 左十字キー 右: ハンド把持 / 解放トグル
-        teleop_arm_hold = bucket_arm.hold_motor_output(
-            teleop.buttons.left_right && !last_teleop.buttons.left_right
-        );
-
-        // 右十字キー 上/下: ベルト速度微調整
-        belt_launcher_controller.update_velocity(
-            teleop.buttons.right_up && !last_teleop.buttons.right_up,
-            teleop.buttons.right_down && !last_teleop.buttons.right_down
-        );
-
-        // 右十字キー 左/右: 作動させるエアシリンダを選択
-        if (teleop.buttons.right_left && !last_teleop.buttons.right_left) {
-            selected_air_launcher_index = AIR_LAUNCHER_LEFT_INDEX;
-        } else if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {
-            selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
-        }
-    }
-
-    // --- 4. 操作権限の調停 (Arbitration) ---
-    const ArbitratedControl ctrl = ControlArbitrator::arbitrate(
-        state_machine.get_status(),
-        teleop,
-        robot_operation,
-        teleop_vx,
-        teleop_vy,
-        teleop_vyaw,
-        belt_fire_trigger,
-        air_fire_trigger,
-        teleop_arm_height,
-        teleop_arm_hold,
-        teleop_arm_width
-    );
-
-    // --- 5. 足回り（オムニ）出力 ---
-    constexpr float robot_yaw_angle = 0.0f;
-    omni.convert(-ctrl.chassis_vx, ctrl.chassis_vy, ctrl.chassis_vyaw, robot_yaw_angle);
-    float front = 0.0f, right = 0.0f, left = 0.0f;
-    omni.getWheelAngularVelocity(&front, &left, &right);
-    const std::array<float, 4> wheel_targets{
-        front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
-    };
-    esc_wheel.set_targets(wheel_targets.data());
-
-    // --- 6. ベルト直動 ---
-    // 右スティック押し込み: ベルト直動初期化 (全モード共通)
-    if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
-        belt_launcher_controller.set_deinit();
-        belt_launcher_client.set_init();
-    }
-
-    if (ctrl.belt_auto_velocity) {
-        belt_launcher_controller.set_velocity(ctrl.belt_launcher_target_velocity);
-    }
-    led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
-
-    // 射出実行
-    if (ctrl.belt_fire_trigger) {
-        float belt_launcher_target_vel = 0.0f;
-        if (belt_launcher_controller.fire(
-                belt_launcher_target_vel, robot_feedback.drive_battery_voltages
-            )) {
-            belt_launcher_client.send_fire_command(belt_launcher_target_vel);
-            robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
-        }
-    }
-    led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
-
-    // --- 7. エアシリンダ制御 ---
-    const uint32_t now_ms = HAL_GetTick();
-    std::array<bool, 8> solenoid_targets{};
-    solenoid_targets[0] = 1;  // 空圧レギュレータ電源用
-
-    // L1トリガーで選択中のエアシリンダを射出
-    if (ctrl.air_fire_trigger) {
-        const uint32_t solenoid_index    = selected_air_launcher_index + 1;
-        solenoid_targets[solenoid_index] = true;
-        air_launcher[selected_air_launcher_index].last_fire_tick_ms = now_ms;
-        air_launcher[selected_air_launcher_index].fired             = true;
-    }
-
-    for (uint32_t i = 0; i < 2; i++) {
-        if (air_launcher[i].fired) {
-            uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
-            if (elapsed_time_ms > AIR_FIRE_LENGTH_MS + AIR_STORAGE_DELAY_MS) {
-                air_launcher[i].fired                   = false;
-                air_launcher[i].storaging               = true;
-                air_launcher[i].start_storaging_tick_ms = now_ms;
-            }
-        }
-        if (air_launcher[i].storaging) {
-            uint32_t elapsed_time_ms = now_ms - air_launcher[i].start_storaging_tick_ms;
-            if (elapsed_time_ms > AIR_STORAGE_LENGTH_MS) {
-                air_launcher[i].fired     = false;
-                air_launcher[i].storaging = false;
-            }
-        }
-        solenoid_targets[i + 1] = (uint8_t)air_launcher[i].fired;
-    }
-    solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
-    solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
-
-    led_info.air_injection = (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]);
-    solenoid.set_target(solenoid_targets);
-
-    // --- 8. バケツ用アーム ---
-    float arm_height_target                  = ctrl.arm_height_target;
-    arm_hold_and_loading_and_width_target[1] = ctrl.arm_width_target;
-    arm_hold_and_loading_and_width_target[2] = ctrl.arm_hold_target;
-
-    // 装填
-    belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
-
-    // CAN通信
-    esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data());
-    dc_arm_height.set_target(arm_height_target);
-}
-
-void receive_and_process_feedbacks()
-{
-    std::array<float, 4> wheel_feedbacks{};
-    if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
-        robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
-        robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
-        robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
-    }
-    float belt_launcher_feedback_vel{};
-    if (belt_launcher_client.get_velocity_feedback(belt_launcher_feedback_vel)) {
-        robot_feedback.belt_launcher_velocity = belt_launcher_feedback_vel;
-    }
-    float belt_launcher_initial_angle{};
-    if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
-        belt_launcher_controller.set_initial_point(HAL_GetTick());
-    }
-    float belt_release_point_velocity{};
-    if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
-        robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
-    }
-    gn10_can::devices::power_manager::Status drive_power_status{};
-    if (drive_power_manager.get_new_status(drive_power_status)) {
-        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
-        robot_feedback.over_current           = drive_power_status.over_current;
-    }
-
-    if (last_emergency_stop_enabled && !robot_feedback.emergency_stop_enabled) {
-        belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
-    }
-    last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
-
-    std::array<float, 4> loading_feedback = {};
-    if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
-        robot_feedback.loading_belt_angle = loading_feedback[0];
-        // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
-        if (robot_feedback.emergency_stop_enabled) {
-            belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
-        }
-    }
-
-    float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
-    bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
-    // ゼロ点合わせが済んだらエンコーダーの値から高さを計算してフィードバックに代入
-    if (dc_arm_height_encoder_initialized) {
-        robot_feedback.bucket_arm_height =
-            bucket_arm.angle_to_height(latest_arm_height_motor_angle);
-    } else {  // ゼロ点取りが済んでいない場合、リミットスイッチで最高点を設定する
-        uint8_t dc_arm_height_limit_sw = dc_arm_height.limit_switches();
-        if ((dc_arm_height_limit_sw & 0b1)) {
-            dc_arm_height.set_init(motor_config_arm_height);
-            dc_arm_height_encoder_initialized = true;
-        }
-        robot_feedback.bucket_arm_height = 0.0f;  // ゼロ点があっていない間は0とする。
-    }
-
-    gn10_can::devices::power_manager::Sensor drive_power_sensor{};
-    if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
-        robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
-        robot_feedback.drive_current          = drive_power_sensor.current;
-    }
-    std::array<float, 4> voltages;
-    if (logic_power_manager.get_new_voltages(voltages)) {
-        led_info.battery_voltage[0] = voltages[0];
-        led_info.battery_voltage[1] = voltages[1];
-    }
-    led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
-}
-
 void stop_all_actuators()
 {
     std::array<float, 4> esc_target_zero{};
@@ -531,7 +305,161 @@ void loop()
         // コントローラ入力による状態遷移要求（左スティック押し込み等）
         state_machine.handle_teleop_input(teleop, last_teleop);
 
-        command_robot_drivers();
+        const bool is_auto_mode = state_machine.is_auto_mode_enabled();
+
+        // --- 1. 足回り手動入力（全モード共通: 左右アナログスティック） ---
+        const float teleop_vx =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        const float teleop_vy =
+            std::clamp(static_cast<float>(teleop.analog.stick_left[1]) / INT8_MAX, -1.0f, 1.0f) *
+            LINER_VELOCITY_MAX;
+        const float teleop_vyaw =
+            std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
+            ANGULAR_VELOCITY_MAX;
+
+        // --- 2. 射出トリガー（全モード共通: L1 / R1 スイッチ） ---
+        // right_trigger: ベルト直動射出 (押下エッジ)
+        const bool belt_fire_trigger =
+            teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
+        // left_trigger: エアシリンダ射出 (押下エッジ)
+        const bool air_fire_trigger =
+            teleop.buttons.left_trigger && !last_teleop.buttons.left_trigger;
+
+        // --- 3. 手動モード時のアクチュエータ入力処理 (teleop_key_config.md 第3.1項) ---
+        float teleop_arm_height = 0.0f;
+        float teleop_arm_hold   = 0.0f;
+        float teleop_arm_width  = 0.0f;
+
+        if (!is_auto_mode) {
+            // 左十字キー 上/下: バケツ用アーム昇降
+            teleop_arm_height =
+                bucket_arm.height_motor_output(teleop.buttons.left_up, teleop.buttons.left_down);
+
+            // 左十字キー 左: アーム展開 / 収納トグル
+            teleop_arm_width = bucket_arm.width_motor_output(
+                teleop.buttons.left_left && !last_teleop.buttons.left_left
+            );
+
+            // 左十字キー 右: ハンド把持 / 解放トグル
+            teleop_arm_hold = bucket_arm.hold_motor_output(
+                teleop.buttons.left_right && !last_teleop.buttons.left_right
+            );
+
+            // 右十字キー 上/下: ベルト速度微調整
+            belt_launcher_controller.update_velocity(
+                teleop.buttons.right_up && !last_teleop.buttons.right_up,
+                teleop.buttons.right_down && !last_teleop.buttons.right_down
+            );
+
+            // 右十字キー 左/右: 作動させるエアシリンダを選択
+            if (teleop.buttons.right_left && !last_teleop.buttons.right_left) {
+                selected_air_launcher_index = AIR_LAUNCHER_LEFT_INDEX;
+            } else if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {
+                selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
+            }
+        }
+
+        // --- 4. 操作権限の調停 (Arbitration) ---
+        const ArbitratedControl ctrl = ControlArbitrator::arbitrate(
+            state_machine.get_status(),
+            teleop,
+            robot_operation,
+            teleop_vx,
+            teleop_vy,
+            teleop_vyaw,
+            belt_fire_trigger,
+            air_fire_trigger,
+            teleop_arm_height,
+            teleop_arm_hold,
+            teleop_arm_width
+        );
+
+        // --- 5. 足回り（オムニ）出力 ---
+        constexpr float robot_yaw_angle = 0.0f;
+        omni.convert(-ctrl.chassis_vx, ctrl.chassis_vy, ctrl.chassis_vyaw, robot_yaw_angle);
+        float front = 0.0f, right = 0.0f, left = 0.0f;
+        omni.getWheelAngularVelocity(&front, &left, &right);
+        const std::array<float, 4> wheel_targets{
+            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
+        };
+        esc_wheel.set_targets(wheel_targets.data());
+
+        // --- 6. ベルト直動 ---
+        // 右スティック押し込み: ベルト直動初期化 (全モード共通)
+        if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
+            belt_launcher_controller.set_deinit();
+            belt_launcher_client.set_init();
+        }
+
+        if (ctrl.belt_auto_velocity) {
+            belt_launcher_controller.set_velocity(ctrl.belt_launcher_target_velocity);
+        }
+        led_info.belt_velocity = belt_launcher_controller.get_target_velocity();
+
+        // 射出実行
+        if (ctrl.belt_fire_trigger) {
+            float belt_launcher_target_vel = 0.0f;
+            if (belt_launcher_controller.fire(
+                    belt_launcher_target_vel, robot_feedback.drive_battery_voltages
+                )) {
+                belt_launcher_client.send_fire_command(belt_launcher_target_vel);
+                robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
+            }
+        }
+        led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
+
+        // --- 7. エアシリンダ制御 ---
+        const uint32_t now_ms = HAL_GetTick();
+        std::array<bool, 8> solenoid_targets{};
+        solenoid_targets[0] = 1;  // 空圧レギュレータ電源用
+
+        // L1トリガーで選択中のエアシリンダを射出
+        if (ctrl.air_fire_trigger) {
+            const uint32_t solenoid_index    = selected_air_launcher_index + 1;
+            solenoid_targets[solenoid_index] = true;
+            air_launcher[selected_air_launcher_index].last_fire_tick_ms = now_ms;
+            air_launcher[selected_air_launcher_index].fired             = true;
+        }
+
+        for (uint32_t i = 0; i < 2; i++) {
+            if (air_launcher[i].fired) {
+                uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
+                if (elapsed_time_ms > AIR_FIRE_LENGTH_MS + AIR_STORAGE_DELAY_MS) {
+                    air_launcher[i].fired                   = false;
+                    air_launcher[i].storaging               = true;
+                    air_launcher[i].start_storaging_tick_ms = now_ms;
+                }
+            }
+            if (air_launcher[i].storaging) {
+                uint32_t elapsed_time_ms = now_ms - air_launcher[i].start_storaging_tick_ms;
+                if (elapsed_time_ms > AIR_STORAGE_LENGTH_MS) {
+                    air_launcher[i].fired     = false;
+                    air_launcher[i].storaging = false;
+                }
+            }
+            solenoid_targets[i + 1] = (uint8_t)air_launcher[i].fired;
+        }
+        solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
+        solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
+
+        led_info.air_injection =
+            (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]);
+        solenoid.set_target(solenoid_targets);
+
+        // --- 8. バケツ用アーム ---
+        float arm_height_target                  = ctrl.arm_height_target;
+        arm_hold_and_loading_and_width_target[1] = ctrl.arm_width_target;
+        arm_hold_and_loading_and_width_target[2] = ctrl.arm_hold_target;
+
+        // 装填
+        belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
+
+        // CAN通信
+        esc_arm_hold_and_loading_and_width.set_targets(
+            arm_hold_and_loading_and_width_target.data()
+        );
+        dc_arm_height.set_target(arm_height_target);
     } else if ((now_ms - last_teleop_received_ms) > TELEOP_TIMEOUT_MS && !teleop_timeout) {
         teleop_timeout = true;
         state_machine.request_sleep();
@@ -552,7 +480,70 @@ void loop()
     packet_led_information_data();
 
     // 5. フィードバック処理と送信
-    receive_and_process_feedbacks();
+    std::array<float, 4> wheel_feedbacks{};
+    if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
+        robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
+        robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
+        robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
+    }
+    float belt_launcher_feedback_vel{};
+    if (belt_launcher_client.get_velocity_feedback(belt_launcher_feedback_vel)) {
+        robot_feedback.belt_launcher_velocity = belt_launcher_feedback_vel;
+    }
+    float belt_launcher_initial_angle{};
+    if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
+        belt_launcher_controller.set_initial_point(HAL_GetTick());
+    }
+    float belt_release_point_velocity{};
+    if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
+        robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
+    }
+    gn10_can::devices::power_manager::Status drive_power_status{};
+    if (drive_power_manager.get_new_status(drive_power_status)) {
+        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
+        robot_feedback.over_current           = drive_power_status.over_current;
+    }
+
+    if (last_emergency_stop_enabled && !robot_feedback.emergency_stop_enabled) {
+        belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+    }
+    last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
+
+    std::array<float, 4> loading_feedback = {};
+    if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
+        robot_feedback.loading_belt_angle = loading_feedback[0];
+        // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
+        if (robot_feedback.emergency_stop_enabled) {
+            belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+        }
+    }
+
+    float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
+    bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
+    // ゼロ点合わせが済んだらエンコーダーの値から高さを計算してフィードバックに代入
+    if (dc_arm_height_encoder_initialized) {
+        robot_feedback.bucket_arm_height =
+            bucket_arm.angle_to_height(latest_arm_height_motor_angle);
+    } else {  // ゼロ点取りが済んでいない場合、リミットスイッチで最高点を設定する
+        uint8_t dc_arm_height_limit_sw = dc_arm_height.limit_switches();
+        if ((dc_arm_height_limit_sw & 0b1)) {
+            dc_arm_height.set_init(motor_config_arm_height);
+            dc_arm_height_encoder_initialized = true;
+        }
+        robot_feedback.bucket_arm_height = 0.0f;  // ゼロ点があっていない間は0とする。
+    }
+
+    gn10_can::devices::power_manager::Sensor drive_power_sensor{};
+    if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
+        robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
+        robot_feedback.drive_current          = drive_power_sensor.current;
+    }
+    std::array<float, 4> voltages;
+    if (logic_power_manager.get_new_voltages(voltages)) {
+        led_info.battery_voltage[0] = voltages[0];
+        led_info.battery_voltage[1] = voltages[1];
+    }
+    led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
     periodic_feedback();
 
     last_teleop = teleop;
