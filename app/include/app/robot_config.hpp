@@ -96,22 +96,22 @@ static_assert(sizeof(command_t) == 8);
 struct operation_t {
     // 識別ヘッダー 1byte
     uint8_t header;
-    uint8_t reserved[1];
-    TargetId target_id;
-    NavigationStatus navigation_status;
-    float vel_x;                    // 移動司令値[m/s]
-    float vel_y;                    // 移動司令値[m/s]
-    float vel_yaw;                  // 移動司令値[rad/s]
-    float belt_launcher_speed;      // ベルト直動の速度司令値（自動計算）[m/s]
-    float bucket_arm_height;        // バケツアームの高さ[m]
-    bool bucket_arm_width_extract;  // バケツアームの展開
-    bool bucket_arm_hold;           // バケツアームのハンド保持
-    int8_t move_bucket_angle_yaw;   // ロボット座標系における移動バケツの水平角[-20〜20deg]
-    int8_t bucket1_angle_yaw;       // ロボット座標系におけるバケツ1の水平角[-20〜20deg]
-    int8_t bucket2_angle_yaw;       // ロボット座標系におけるバケツ2の水平角[-20〜20deg]
-    int8_t bucket3_angle_yaw;       // ロボット座標系におけるバケツ3の水平角[-20〜20deg]
-    int8_t flag_angle_yaw;          // ロボット座標系における旗の水平角[-20〜20deg]
-    int8_t desk_angle_yaw;          // ロボット座標系における机の水平角[-20〜20deg]
+    uint8_t can_move;                    // 移動可能かどうか
+    TargetId target_id;                  // 移動先
+    NavigationStatus navigation_status;  // Navigationの状態
+
+    float vel_x;    // 移動司令値[m/s]
+    float vel_y;    // 移動司令値[m/s]
+    float vel_yaw;  // 移動司令値[rad/s]
+
+    float belt_launcher_speed;  // ベルト直動の速度司令値（自動計算）[m/s]
+
+    int8_t move_bucket_angle_yaw;  // ロボット座標系における移動バケツの水平角[-20〜20deg]
+    int8_t bucket1_angle_yaw;      // ロボット座標系におけるバケツ1の水平角[-20〜20deg]
+    int8_t bucket2_angle_yaw;      // ロボット座標系におけるバケツ2の水平角[-20〜20deg]
+    int8_t bucket3_angle_yaw;      // ロボット座標系におけるバケツ3の水平角[-20〜20deg]
+    int8_t flag_angle_yaw;         // ロボット座標系における旗の水平角[-20〜20deg]
+    int8_t desk_angle_yaw;         // ロボット座標系における机の水平角[-20〜20deg]
 } __attribute__((__packed__));
 
 union operation_u {
@@ -119,7 +119,7 @@ union operation_u {
     uint8_t binary[sizeof(operation_t)];  // 送信バイト配列
 } __attribute__((__packed__));
 
-static_assert(sizeof(operation_t) == 32);
+static_assert(sizeof(operation_t) == 26);
 
 /**
  * @brief ロボットのセンサ値などのフィードバック
@@ -128,19 +128,21 @@ static_assert(sizeof(operation_t) == 32);
 struct feedback_t {
     uint8_t header;    // ヘッダー
     uint8_t sequence;  // シーケンス番号
-    // 電源周り
+
+    // フラグ
     bool emergency_stop_enabled;
-    bool over_current;
+    NavigationStatus navigation_status;  // Navigationの状態(結局メイン基板でどうなったか)
+
+    // 電源
     float drive_battery_voltages;
     float drive_current;
-    // 記録用
-    float belt_launcher_target_velocity;        // 目標速度[m/s]
-    float last_belt_launcher_release_velocity;  // 射出リリース時の初速[m/s]
-    // 各アクチュエータのフィードバック
-    float wheel_angular_velocity[3];  // 0:front 1:left 2:right
-    float belt_launcher_velocity;     // 現在のベルト直動の速度[m/s]
-    float loading_belt_angle;         // 装填機構のプーリー角度[rad]
-    float bucket_arm_height;          // バケツアームの高さ[m]
+
+    // 各デバイスのフィードバック
+    float wheel_angular_velocity[3];      // 0:front 1:left 2:right
+    float belt_launcher_target_velocity;  // 目標速度[m/s]
+    float belt_launcher_velocity;         // 現在のベルト直動の速度[m/s]
+    float belt_launcher_voltage;          // VESCで読んだ電圧[V]
+    float belt_launcher_current;          // VESCで読んだ電流[A]
 } __attribute__((__packed__));
 
 union feedback_u {
@@ -148,7 +150,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 44);
+static_assert(sizeof(feedback_t) == 40);
 
 /**
  * @brief ロボットの操縦信号値
