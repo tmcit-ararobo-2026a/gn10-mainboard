@@ -87,8 +87,6 @@ gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
 gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
-gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
-    robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm_hold_and_loading_and_width(fdcan3_bus, 2);
 gn10_can::devices::MotorDriverClient dc_arm_height(can1_bus, 0);
@@ -141,8 +139,6 @@ uint32_t selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
 RobotStateMachine state_machine;
 robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
-uint32_t last_command_send_time_ms          = 0;
-constexpr uint32_t COMMAND_SEND_INTERVAL_MS = 50;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -469,16 +465,10 @@ void loop()
     const bool operation_received = ether.receive_operation_data(robot_operation);
     state_machine.update(now_ms, operation_received, robot_operation);
 
-    // 3. Jetsonへの command 送信（周期送信）
-    if ((now_ms - last_command_send_time_ms) >= COMMAND_SEND_INTERVAL_MS) {
-        last_command_send_time_ms = now_ms;
-        ether.send_command_data(state_machine.get_command());
-    }
-
-    // 4. LED表示情報の更新
+    // 3. LED表示情報の更新
     packet_led_information_data();
 
-    // 5. フィードバック処理と送信
+    // 4. フィードバック処理と送信
     std::array<float, 4> wheel_feedbacks{};
     if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
         robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
@@ -529,11 +519,13 @@ void loop()
         led_info.battery_voltage[1] = voltages[1];
     }
     led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
+    // 指令値を追加
+    robot_feedback.command = state_machine.get_command();
     periodic_feedback();
 
     last_teleop = teleop;
 
-    // 6. システム生存表示（青LED）
+    // 5. システム生存表示（青LED）
     update_heartbeat_led();
 }
 
