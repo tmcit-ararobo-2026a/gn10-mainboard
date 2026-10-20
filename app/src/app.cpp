@@ -63,7 +63,7 @@ constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
-constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
+constexpr uint32_t FEEDBACK_INTERVAL_MS         = 20;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
 constexpr uint32_t OPERATION_TIMEOUT_MS         = 100;
