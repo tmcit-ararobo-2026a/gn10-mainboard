@@ -107,7 +107,6 @@ ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 /* ----------------------- robot control --------------------------*/
 // 装填・アーム出力値
 std::array<float, 4> arm_hold_and_loading_and_width_target{0.0f, 0.0f, 0.0f, 0.0f};
-bool last_emergency_stop_enabled = false;
 
 // ベルト直動
 BeltLauncherController belt_launcher_controller(
@@ -494,43 +493,29 @@ void loop()
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
         belt_launcher_controller.set_initial_point(HAL_GetTick());
     }
-    float belt_release_point_velocity{};
-    if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
-        robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
-    }
     gn10_can::devices::power_manager::Status drive_power_status{};
     if (drive_power_manager.get_new_status(drive_power_status)) {
         robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
-        robot_feedback.over_current           = drive_power_status.over_current;
     }
-
-    if (last_emergency_stop_enabled && !robot_feedback.emergency_stop_enabled) {
-        belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
-    }
-    last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
 
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
-        robot_feedback.loading_belt_angle = loading_feedback[0];
         // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
         if (robot_feedback.emergency_stop_enabled) {
-            belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+            belt_launcher_controller.set_reload_angle(loading_feedback[0]);
         }
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
     bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
-    // ゼロ点合わせが済んだらエンコーダーの値から高さを計算してフィードバックに代入
+    // ゼロ点合わせが済んだ
     if (dc_arm_height_encoder_initialized) {
-        robot_feedback.bucket_arm_height =
-            bucket_arm.angle_to_height(latest_arm_height_motor_angle);
     } else {  // ゼロ点取りが済んでいない場合、リミットスイッチで最高点を設定する
         uint8_t dc_arm_height_limit_sw = dc_arm_height.limit_switches();
         if ((dc_arm_height_limit_sw & 0b1)) {
             dc_arm_height.set_init(motor_config_arm_height);
             dc_arm_height_encoder_initialized = true;
         }
-        robot_feedback.bucket_arm_height = 0.0f;  // ゼロ点があっていない間は0とする。
     }
 
     gn10_can::devices::power_manager::Sensor drive_power_sensor{};
