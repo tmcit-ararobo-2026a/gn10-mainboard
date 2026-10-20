@@ -246,6 +246,7 @@ void command_robot_drivers()
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
                 )) {  // 射出できるかどうか
                 belt_launcher_client.send_fire_command(belt_launcher_target_vel);
+                serial_printf("target_vel:%f\n", belt_launcher_target_vel);
                 robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
             }
         }

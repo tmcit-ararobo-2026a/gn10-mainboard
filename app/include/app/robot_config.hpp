@@ -39,7 +39,7 @@ namespace ip {
 constexpr uint8_t mainboard[] = {192, 168, 3, 2};
 constexpr uint8_t pc_robot[]  = {192, 168, 3, 1};
 constexpr uint8_t pc_wifi[]   = {192, 168, 2, 1};
-constexpr uint8_t teleop[]    = {192, 168, 2, 2};
+constexpr uint8_t teleop[]    = {192, 168, 3, 10};
 }  // namespace ip
 
 enum class TargetId : uint8_t {
