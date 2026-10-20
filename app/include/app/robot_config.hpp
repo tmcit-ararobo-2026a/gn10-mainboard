@@ -2,8 +2,8 @@
  * @file robot_data_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
- * @version 3.0
- * @date 2026-10-05
+ * @version 4.0
+ * @date 2026-10-20
  *
  * @copyright Copyright (c) 2026
  *
@@ -96,7 +96,7 @@ static_assert(sizeof(command_t) == 8);
 struct operation_t {
     // 識別ヘッダー 1byte
     uint8_t header;
-    uint8_t can_move;                    // 移動可能かどうか
+    bool fatal_error;                    // 復帰不可
     TargetId target_id;                  // 移動先
     NavigationStatus navigation_status;  // Navigationの状態
 
