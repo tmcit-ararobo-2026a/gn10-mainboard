@@ -407,7 +407,8 @@ void loop()
                 belt_launcher_client.send_fire_command(
                     launcher_revision::get_compensated_velocity(belt_launcher_target_vel)
                 );
-                robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
+                robot_feedback.belt_launcher_target_velocity =
+                    launcher_revision::get_compensated_velocity(belt_launcher_target_vel);
             }
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
