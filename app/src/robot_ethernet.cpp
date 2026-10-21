@@ -65,27 +65,9 @@ bool RobotEthernet::init()
     setRTR(100);
 
     // ソケット作成
-    socket(socket_command_, Sn_MR_UDP, robot_config::port::command, SF_IO_NONBLOCK);
     socket(socket_operation_, Sn_MR_UDP, robot_config::port::operation, SF_IO_NONBLOCK);
     socket(socket_teleop_, Sn_MR_UDP, robot_config::port::teleop, SF_IO_NONBLOCK);
 
-    return true;
-}
-
-bool RobotEthernet::send_command_data(const robot_config::command_t& data)
-{
-    robot_config::command_u tx_data;
-    tx_data.value        = data;
-    tx_data.value.header = robot_config::header::command;
-
-    uint8_t ip_address[4];
-    memcpy(ip_address, robot_config::ip::pc_robot, 4);
-
-    int32_t len = sendto(
-        socket_command_, tx_data.binary, sizeof(tx_data), ip_address, robot_config::port::command
-    );
-
-    if (len != sizeof(robot_config::command_u)) return false;
     return true;
 }
 
