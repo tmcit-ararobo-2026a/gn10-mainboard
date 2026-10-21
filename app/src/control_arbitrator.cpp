@@ -64,9 +64,9 @@ ArbitratedControl ControlArbitrator::arbitrate(
             result.belt_auto_velocity = false;
 
             // ハンド操作：自動（Jetson operation からの司令値）
-            result.arm_height_target = op.bucket_arm_height;
-            result.arm_hold_target   = op.bucket_arm_hold ? 1.0f : 0.0f;
-            result.arm_width_target  = op.bucket_arm_width_extract ? 1.0f : 0.0f;
+            result.arm_height_target = 0.0f;
+            result.arm_hold_target   = 0.0f;
+            result.arm_width_target  = 0.0f;
             break;
 
         case robot_config::NavigationStatus::Stanby:

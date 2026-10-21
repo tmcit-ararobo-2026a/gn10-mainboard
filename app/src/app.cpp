@@ -64,7 +64,7 @@ constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
 constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
-constexpr uint32_t FEEDBACK_INTERVAL_MS         = 50;
+constexpr uint32_t FEEDBACK_INTERVAL_MS         = 20;
 constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
 constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
 constexpr uint32_t OPERATION_TIMEOUT_MS         = 100;
@@ -88,8 +88,6 @@ gn10_can::FDCANBus fdcan2_bus(fdcan2_driver);
 gn10_can::FDCANBus fdcan3_bus(fdcan3_driver);
 // CAN Devices
 gn10_can::devices::SolenoidDriverClient solenoid(can1_bus, 0);
-gn10_can::devices::RobotControlHubServer<robot_config::command_t, robot_config::feedback_t>
-    robot_control_hub(fdcan2_bus, 0);
 gn10_can::devices::ESCHubClient esc_wheel(fdcan3_bus, 1);
 gn10_can::devices::ESCHubClient esc_arm_hold_and_loading_and_width(fdcan3_bus, 2);
 gn10_can::devices::MotorDriverClient dc_arm_height(can1_bus, 0);
@@ -108,7 +106,6 @@ ThreeWheelOmni omni(0.4f, 0.13f / 2.0f);
 /* ----------------------- robot control --------------------------*/
 // 装填・アーム出力値
 std::array<float, 4> arm_hold_and_loading_and_width_target{0.0f, 0.0f, 0.0f, 0.0f};
-bool last_emergency_stop_enabled = false;
 
 // ベルト直動
 BeltLauncherController belt_launcher_controller(
@@ -143,8 +140,6 @@ uint32_t selected_air_launcher_index = AIR_LAUNCHER_RIGHT_INDEX;
 RobotStateMachine state_machine;
 robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
-uint32_t last_command_send_time_ms          = 0;
-constexpr uint32_t COMMAND_SEND_INTERVAL_MS = 50;
 
 /* ----------------------- LED --------------------------*/
 LEDInformation led_info;
@@ -474,16 +469,10 @@ void loop()
     const bool operation_received = ether.receive_operation_data(robot_operation);
     state_machine.update(now_ms, operation_received, robot_operation);
 
-    // 3. Jetsonへの command 送信（周期送信）
-    if ((now_ms - last_command_send_time_ms) >= COMMAND_SEND_INTERVAL_MS) {
-        last_command_send_time_ms = now_ms;
-        ether.send_command_data(state_machine.get_command());
-    }
-
-    // 4. LED表示情報の更新
+    // 3. LED表示情報の更新
     packet_led_information_data();
 
-    // 5. フィードバック処理と送信
+    // 4. フィードバック処理と送信
     std::array<float, 4> wheel_feedbacks{};
     if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
         robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
@@ -506,43 +495,29 @@ void loop()
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
         belt_launcher_controller.set_initial_point(HAL_GetTick());
     }
-    float belt_release_point_velocity{};
-    if (belt_launcher_client.get_release_point(belt_release_point_velocity)) {
-        robot_feedback.last_belt_launcher_release_velocity = belt_release_point_velocity;
-    }
     gn10_can::devices::power_manager::Status drive_power_status{};
     if (drive_power_manager.get_new_status(drive_power_status)) {
         robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
-        robot_feedback.over_current           = drive_power_status.over_current;
     }
-
-    if (last_emergency_stop_enabled && !robot_feedback.emergency_stop_enabled) {
-        belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
-    }
-    last_emergency_stop_enabled = robot_feedback.emergency_stop_enabled;
 
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
-        robot_feedback.loading_belt_angle = loading_feedback[0];
         // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
         if (robot_feedback.emergency_stop_enabled) {
-            belt_launcher_controller.set_reload_angle(robot_feedback.loading_belt_angle);
+            belt_launcher_controller.set_reload_angle(loading_feedback[0]);
         }
     }
 
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
     bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
-    // ゼロ点合わせが済んだらエンコーダーの値から高さを計算してフィードバックに代入
+    // ゼロ点合わせが済んだ
     if (dc_arm_height_encoder_initialized) {
-        robot_feedback.bucket_arm_height =
-            bucket_arm.angle_to_height(latest_arm_height_motor_angle);
     } else {  // ゼロ点取りが済んでいない場合、リミットスイッチで最高点を設定する
         uint8_t dc_arm_height_limit_sw = dc_arm_height.limit_switches();
         if ((dc_arm_height_limit_sw & 0b1)) {
             dc_arm_height.set_init(motor_config_arm_height);
             dc_arm_height_encoder_initialized = true;
         }
-        robot_feedback.bucket_arm_height = 0.0f;  // ゼロ点があっていない間は0とする。
     }
 
     gn10_can::devices::power_manager::Sensor drive_power_sensor{};
@@ -556,11 +531,13 @@ void loop()
         led_info.battery_voltage[1] = voltages[1];
     }
     led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
+    // 指令値を追加
+    robot_feedback.command = state_machine.get_command();
     periodic_feedback();
 
     last_teleop = teleop;
 
-    // 6. システム生存表示（青LED）
+    // 5. システム生存表示（青LED）
     update_heartbeat_led();
 }
 

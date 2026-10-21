@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+
 #include "app/robot_config.hpp"
 
 /**
@@ -45,34 +46,50 @@ public:
      * @param operation_received 今回の周期でoperationを受信できたか
      * @param latest_op 受信した最新のoperationデータ
      */
-    void update(uint32_t now_ms, bool operation_received, const robot_config::operation_t& latest_op);
+    void update(
+        uint32_t now_ms, bool operation_received, const robot_config::operation_t& latest_op
+    );
 
     /**
      * @brief コントローラ入力によるコマンド・モード更新
      * @param teleop 現在のコントローラ入力
      * @param last_teleop 前回のコントローラ入力
      */
-    void handle_teleop_input(const robot_config::teleop_t& teleop, const robot_config::teleop_t& last_teleop);
+    void handle_teleop_input(
+        const robot_config::teleop_t& teleop, const robot_config::teleop_t& last_teleop
+    );
 
     /**
      * @brief 送信用 command_t を取得
      */
-    const robot_config::command_t& get_command() const { return command_; }
+    const robot_config::command_t& get_command() const
+    {
+        return command_;
+    }
 
     /**
      * @brief 現在確定しているナビゲーションステータスを取得
      */
-    robot_config::NavigationStatus get_status() const { return current_status_; }
+    robot_config::NavigationStatus get_status() const
+    {
+        return current_status_;
+    }
 
     /**
      * @brief コントローラトグルスイッチによる自動モード有効フラグを取得
      */
-    bool is_auto_mode_enabled() const { return is_auto_mode_; }
+    bool is_auto_mode_enabled() const
+    {
+        return is_auto_mode_;
+    }
 
     /**
      * @brief PC/Jetsonとの通信がタイムアウトしているか
      */
-    bool is_operation_timeout() const { return operation_timeout_; }
+    bool is_operation_timeout() const
+    {
+        return operation_timeout_;
+    }
 
     /**
      * @brief 手動モード要求をセット
@@ -87,14 +104,8 @@ private:
     static constexpr uint32_t OPERATION_TIMEOUT_MS = 200;
 
     robot_config::command_t command_{
-        .header             = robot_config::header::command,
-        .sequence           = 0,
-        .shutdown           = false,
-        .localization       = true, // 自己位置推定を常時有効化
-        .logging            = false,
         .target_id          = robot_config::TargetId::StartZone,
         .navigation_command = robot_config::NavigationCommand::Sleep,
-        .cloth_collect      = false,
     };
 
     robot_config::NavigationStatus current_status_ = robot_config::NavigationStatus::Stanby;
