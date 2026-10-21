@@ -16,6 +16,7 @@
 #include "app/belt_launcher_controller.hpp"
 #include "app/bucket_arm_controller.hpp"
 #include "app/control_arbitrator.hpp"
+#include "app/launcher_revision.hpp"
 #include "app/led_information.hpp"
 #include "app/robot_ethernet.hpp"
 #include "app/robot_state_machine.hpp"
@@ -398,8 +399,11 @@ void loop()
             if (belt_launcher_controller.fire(
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
                 )) {
-                belt_launcher_client.send_fire_command(belt_launcher_target_vel);
-                robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
+                belt_launcher_client.send_fire_command(
+                    launcher_revision::get_compensated_velocity(belt_launcher_target_vel)
+                );
+                robot_feedback.belt_launcher_target_velocity =
+                    launcher_revision::get_compensated_velocity(belt_launcher_target_vel);
             }
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
