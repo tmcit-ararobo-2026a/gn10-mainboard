@@ -138,9 +138,11 @@ struct feedback_t {
     float last_belt_launcher_release_velocity;  // 射出リリース時の初速[m/s]
     // 各アクチュエータのフィードバック
     float wheel_angular_velocity[3];  // 0:front 1:left 2:right
-    float belt_launcher_velocity;     // 現在のベルト直動の速度[m/s]
     float loading_belt_angle;         // 装填機構のプーリー角度[rad]
     float bucket_arm_height;          // バケツアームの高さ[m]
+    float vesc_voltage;
+    float vesc_current;
+    float vesc_velocity;
 } __attribute__((__packed__));
 
 union feedback_u {
@@ -148,7 +150,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 44);
+static_assert(sizeof(feedback_t) == 52);
 
 /**
  * @brief ロボットの操縦信号値

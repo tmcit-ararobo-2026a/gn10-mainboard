@@ -491,8 +491,16 @@ void loop()
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
     float belt_launcher_feedback_vel{};
-    if (belt_launcher_client.get_velocity_feedback(belt_launcher_feedback_vel)) {
-        robot_feedback.belt_launcher_velocity = belt_launcher_feedback_vel;
+    float belt_launcher_feedback_voltage{};
+    float belt_launcher_feedback_current{};
+    if (belt_launcher_client.get_feedbacks(
+            belt_launcher_feedback_vel,
+            belt_launcher_feedback_current,
+            belt_launcher_feedback_voltage
+        )) {
+        robot_feedback.vesc_velocity = belt_launcher_feedback_vel;
+        robot_feedback.vesc_voltage  = belt_launcher_feedback_voltage;
+        robot_feedback.vesc_current  = belt_launcher_feedback_current;
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
