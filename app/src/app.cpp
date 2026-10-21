@@ -16,6 +16,7 @@
 #include "app/belt_launcher_controller.hpp"
 #include "app/bucket_arm_controller.hpp"
 #include "app/control_arbitrator.hpp"
+#include "app/launcher_revision.hpp"
 #include "app/led_information.hpp"
 #include "app/robot_ethernet.hpp"
 #include "app/robot_state_machine.hpp"

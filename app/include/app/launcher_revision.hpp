@@ -1,37 +1,71 @@
 #pragma once
-
-#include <array>
-#include <cstddef>
+/**
+ * 欲しいリリース速度[m/s] -> 補正済み速度[m/s]
+ *
+ * 1. 実測データの対応表(速度 -> ERPM)を、区間ごとの線形補間の式で ERPM にする
+ * 2. その ERPM を速度に戻して返す
+ *
+ * 線形補間の式:  erpm = erpm0 + (v - v0) * (erpm1 - erpm0) / (v1 - v0)
+ *   (v0, erpm0) = 区間の始点ノード,  (v1, erpm1) = 区間の終点ノード
+ */
 
 namespace launcher_revision {
+
+constexpr float BELT_PITCH       = 0.005f;  // 5 mm -> m
+constexpr float PULLEY_TEETH     = 24.0f;
+constexpr float MOTOR_POLE_PAIRS = 7.0f;
+
 /**
- * @brief 1次元線形補間のヘルパー
+ * @brief 欲しいリリース速度から、必要な ERPM を求める
+ * @param v 欲しい速度 [m/s]
  */
-constexpr float interp(float x, float x0, float x1, float y0, float y1)
+inline float velocity_to_erpm_table(float v)
 {
-    if (x1 == x0) return y0;
-    const float t = (x - x0) / (x1 - x0);
-    return y0 + t * (y1 - y0);
+    float erpm = 0.0f;
+
+    if (v <= 0.0f) {
+        erpm = 0.0f;  // 停止指令
+    } else if (v <= 2.000f) {
+        erpm = 5286.0f;  // ノード0より下は一定
+    } else if (v <= 4.460f) {
+        // ノード0 -> 1
+        erpm = 5286.0f + (v - 2.000f) * (13916.0f - 5286.0f) / (4.460f - 2.000f);
+    } else if (v <= 4.470f) {
+        // ノード1 -> 2 (実測の段差。ERPMが急に変わる)
+        erpm = 13916.0f + (v - 4.460f) * (17816.0f - 13916.0f) / (4.470f - 4.460f);
+    } else if (v <= 6.204f) {
+        // ノード2 -> 3
+        erpm = 17816.0f + (v - 4.470f) * (19350.0f - 17816.0f) / (6.204f - 4.470f);
+    } else if (v <= 8.705f) {
+        // ノード3 -> 4
+        erpm = 19350.0f + (v - 6.204f) * (21109.0f - 19350.0f) / (8.705f - 6.204f);
+    } else if (v <= 10.594f) {
+        // ノード4 -> 5
+        erpm = 21109.0f + (v - 8.705f) * (22868.0f - 21109.0f) / (10.594f - 8.705f);
+    } else if (v <= 11.597f) {
+        // ノード5 -> 6
+        erpm = 22868.0f + (v - 10.594f) * (24627.0f - 22868.0f) / (11.597f - 10.594f);
+    } else if (v <= 11.935f) {
+        // ノード6 -> 7
+        erpm = 24627.0f + (v - 11.597f) * (26386.0f - 24627.0f) / (11.935f - 11.597f);
+    } else {
+        erpm = 26386.0f;  // ノード7より上は一定(速度が頭打ち)
+    }
+
+    return erpm;
 }
 
 /**
- * @brief 欲しいリリース速度から、実測を一致させるための送信速度を計算する
- * @param v_target ユーザーが指定した欲しい速度 [m/s]
- * @return 送信すべき補正済み速度 [m/s]
+ * @brief 欲しいリリース速度から、送信すべき補正済み速度を返す
+ * @param v_target 欲しい速度 [m/s]
+ * @return 補正済み速度 [m/s]
  */
 inline float get_compensated_velocity(float v_target)
 {
-    // ※ 2番目の値（送信側の値）は、受信側の `velocity_to_rpm` を経由したときに
-    //    期待通りの ERPM になるような逆算値に書き換えてご活用ください。
-    if (v_target <= 2.000f) return 2.000f;
-    if (v_target <= 4.460f) return interp(v_target, 2.000f, 4.460f, 2.000f, 3.120f);     // 例
-    if (v_target <= 4.470f) return interp(v_target, 4.460f, 4.470f, 3.120f, 4.470f);     // 例
-    if (v_target <= 6.204f) return interp(v_target, 4.470f, 6.204f, 4.470f, 4.850f);     // 例
-    if (v_target <= 8.705f) return interp(v_target, 6.204f, 8.705f, 4.850f, 5.290f);     // 例
-    if (v_target <= 10.594f) return interp(v_target, 8.705f, 10.594f, 5.290f, 5.730f);   // 例
-    if (v_target <= 11.597f) return interp(v_target, 10.594f, 11.597f, 5.730f, 6.170f);  // 例
-    if (v_target <= 11.935f) return interp(v_target, 11.597f, 11.935f, 6.170f, 6.610f);  // 例
-    return 6.610f;                                                                       // 頭打ち
+    const float erpm                  = velocity_to_erpm_table(v_target);
+    const float distance_per_rotation = BELT_PITCH * PULLEY_TEETH;  // [m/rev]
+
+    return (erpm / MOTOR_POLE_PAIRS / 60.0f) * distance_per_rotation;
 }
 
 }  // namespace launcher_revision
