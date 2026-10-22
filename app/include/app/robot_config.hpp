@@ -75,7 +75,7 @@ struct command_t {
 struct operation_t {
     // 識別ヘッダー 1byte
     uint8_t header;
-    bool fatal_error;                    // 復帰不可
+    bool localization_success;           // 自己位置推定状態
     TargetId target_id;                  // 移動先
     NavigationStatus navigation_status;  // Navigationの状態
 
