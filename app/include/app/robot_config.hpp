@@ -2,8 +2,8 @@
  * @file robot_data_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
- * @version 4.0
- * @date 2026-10-20
+ * @version 4.1
+ * @date 2026-10-22
  *
  * @copyright Copyright (c) 2026
  *
@@ -75,7 +75,7 @@ struct command_t {
 struct operation_t {
     // 識別ヘッダー 1byte
     uint8_t header;
-    bool fatal_error;                    // 復帰不可
+    bool localization_success;           // 自己位置推定状態
     TargetId target_id;                  // 移動先
     NavigationStatus navigation_status;  // Navigationの状態
 

@@ -14,6 +14,10 @@ void RobotStateMachine::update(
         } else {
             // 自動モード時はJetson側の状態を同期
             current_status_ = latest_op.navigation_status;
+            // 自己位置推定失敗したら強制的にFailに遷移
+            if (!latest_op.localization_success) {
+                current_status_ = robot_config::NavigationStatus::Fail;
+            }
         }
     } else {
         // 通信途絶時の安全フェールセーフ
@@ -33,7 +37,7 @@ void RobotStateMachine::handle_teleop_input(
     // 1. トグルスイッチ状態によるモード切替
     // left_toggle_sw (1: 自動モード, 0: 手動モード)
     const bool prev_auto_mode = is_auto_mode_;
-    is_auto_mode_ = (teleop.buttons.left_toggle_sw != 0);
+    is_auto_mode_             = (teleop.buttons.left_toggle_sw != 0);
 
     // 手動モードに切り替わった場合、即座にナビゲーションを停止
     if (prev_auto_mode && !is_auto_mode_) {

@@ -142,7 +142,7 @@ robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
 
 /* ----------------------- LED --------------------------*/
-LEDInformation led_info;
+LEDInformation led_info{};
 
 /* ------------------ Lチカ ----------------------- */
 uint32_t heartbeat_last_toggle_time_ms = 0;
@@ -177,11 +177,19 @@ void periodic_feedback()
 
 void packet_led_information_data()
 {
-    led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
-    led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
-    led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
-    led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
-    led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
+    if (robot_operation.localization_success) {
+        led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
+        led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
+        led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
+        led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
+        led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
+    } else {
+        led_info.bucket1_angle_yaw_rad     = 0;
+        led_info.bucket2_angle_yaw_rad     = 0;
+        led_info.bucket3_angle_yaw_rad     = 0;
+        led_info.flag_angle_yaw_rad        = 0;
+        led_info.move_bucket_angle_yaw_rad = 0;
+    }
 }
 
 void stop_all_actuators()
