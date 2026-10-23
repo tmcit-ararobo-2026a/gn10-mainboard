@@ -29,6 +29,7 @@
 
 namespace {
 /* ----------------- 定数 ----------------------*/
+constexpr bool ENABLE_REMOTE_EMS = true;
 // 足回り
 constexpr float LINER_VELOCITY_MAX   = 4.0f;
 constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
@@ -226,8 +227,8 @@ void setup()
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
     // Other device configuration
-    drive_power_manager_config.sensor_rate_ms            = 30;
-    drive_power_manager_config.use_remote_emergency_stop = false;
+    drive_power_manager_config.sensor_rate_ms            = 10;
+    drive_power_manager_config.use_remote_emergency_stop = ENABLE_REMOTE_EMS;
     logic_power_manager_config.sensor_rate_ms            = 100;
     logic_power_manager_config.use_remote_emergency_stop = false;
 
@@ -305,6 +306,14 @@ void loop()
     if (ether.receive_teleop(teleop)) {
         teleop_timeout          = false;
         last_teleop_received_ms = now_ms;
+
+        if (ENABLE_REMOTE_EMS) {
+            if (teleop.buttons.right_toggle_sw) {
+                drive_power_manager.set_stop(false);
+            } else {
+                drive_power_manager.set_stop(true);
+            }
+        }
 
         // コントローラ入力による状態遷移要求（左スティック押し込み等）
         state_machine.handle_teleop_input(teleop, last_teleop);
