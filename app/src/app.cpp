@@ -40,6 +40,9 @@ constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
 constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.00f;  // [m/(s*V)]
+constexpr float MOTOR_POLES                       = 14.0f;
+constexpr float BELT_PITCH                        = 0.005f;  // 5 mm -> m
+constexpr float PULLEY_TEETH                      = 24.0f;
 // 装填機構
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f;
 constexpr uint32_t RELOAD_DELAY_MS  = 1200;
@@ -111,6 +114,7 @@ std::array<float, 4> arm_hold_and_loading_and_width_target{0.0f, 0.0f, 0.0f, 0.0
 BeltLauncherController belt_launcher_controller(
     BELT_LAUNCHER_MAX_VELOCITY, BELT_LAUNCHER_MIN_VELOCITY
 );
+LauncherRevision launcher_revision(MOTOR_POLES, BELT_PITCH, PULLEY_TEETH);
 
 // バケツアーム
 bool dc_arm_height_encoder_initialized = false;
@@ -400,10 +404,10 @@ void loop()
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
                 )) {
                 belt_launcher_client.send_fire_command(
-                    launcher_revision::get_compensated_velocity(belt_launcher_target_vel)
+                    launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel)
                 );
                 robot_feedback.belt_launcher_target_velocity =
-                    launcher_revision::get_compensated_velocity(belt_launcher_target_vel);
+                    launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
             }
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
@@ -479,17 +483,18 @@ void loop()
         robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
-    float belt_launcher_feedback_vel{};
+    float belt_launcher_feedback_erpm{};
     float belt_launcher_feedback_voltage{};
     float belt_launcher_feedback_current{};
     if (belt_launcher_client.get_feedbacks(
-            belt_launcher_feedback_vel,
+            belt_launcher_feedback_erpm,
             belt_launcher_feedback_current,
             belt_launcher_feedback_voltage
         )) {
-        robot_feedback.belt_launcher_velocity = belt_launcher_feedback_vel;
-        robot_feedback.belt_launcher_voltage  = belt_launcher_feedback_voltage;
-        robot_feedback.belt_launcher_current  = belt_launcher_feedback_current;
+        robot_feedback.belt_launcher_velocity =
+            launcher_revision.erpm_to_velocity(belt_launcher_feedback_erpm);
+        robot_feedback.belt_launcher_voltage = belt_launcher_feedback_voltage;
+        robot_feedback.belt_launcher_current = belt_launcher_feedback_current;
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
