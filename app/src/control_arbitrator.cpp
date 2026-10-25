@@ -25,7 +25,7 @@ ArbitratedControl ControlArbitrator::arbitrate(
             // 水平・回転移動：自動 (Jetson座標系 -> オムニ機体座標系)
             result.chassis_vx   = -op.vel_y;
             result.chassis_vy   = op.vel_x;
-            result.chassis_vyaw = op.vel_yaw;
+            result.chassis_vyaw = -op.vel_yaw;
 
             // ベルト直動威力：自動
             result.belt_auto_velocity            = true;
@@ -41,7 +41,7 @@ ArbitratedControl ControlArbitrator::arbitrate(
             // 水平移動：手動 / 回転移動：自動
             result.chassis_vx   = teleop_vx;
             result.chassis_vy   = teleop_vy;
-            result.chassis_vyaw = op.vel_yaw;
+            result.chassis_vyaw = -op.vel_yaw;
 
             // ベルト直動威力：自動
             result.belt_auto_velocity            = true;
