@@ -125,6 +125,7 @@ struct feedback_t {
 
     // 自動操縦
     command_t command;  // 司令
+    uint8_t fire_counter;
 } __attribute__((__packed__));
 
 union feedback_u {
@@ -132,7 +133,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 42);
+static_assert(sizeof(feedback_t) == 43);
 
 /**
  * @brief ロボットの操縦信号値

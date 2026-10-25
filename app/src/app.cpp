@@ -407,6 +407,7 @@ void loop()
         if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
             belt_launcher_controller.set_deinit();
             belt_launcher_client.set_init();
+            robot_feedback.fire_counter = 0;
         }
 
         if (ctrl.belt_auto_velocity) {
@@ -419,12 +420,15 @@ void loop()
             float belt_launcher_target_vel = 0.0f;
             if (belt_launcher_controller.fire(
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
-                )) {
-                belt_launcher_client.send_fire_command(
-                    launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel)
-                );
-                robot_feedback.belt_launcher_target_velocity =
+                ))
+
+            {
+                float belt_launcher_revision_erpm =
                     launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
+                belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
+                robot_feedback.belt_launcher_target_velocity =
+                    launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
+                robot_feedback.fire_counter++;
             }
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
