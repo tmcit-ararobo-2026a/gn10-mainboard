@@ -29,6 +29,7 @@
 
 namespace {
 /* ----------------- 定数 ----------------------*/
+constexpr bool ENABLE_REMOTE_EMS = true;
 // 足回り
 constexpr float LINER_VELOCITY_MAX   = 4.0f;
 constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
@@ -146,7 +147,7 @@ robot_config::operation_t robot_operation{};
 robot_config::feedback_t robot_feedback{};
 
 /* ----------------------- LED --------------------------*/
-LEDInformation led_info;
+LEDInformation led_info{};
 
 /* ------------------ Lチカ ----------------------- */
 uint32_t heartbeat_last_toggle_time_ms = 0;
@@ -181,11 +182,19 @@ void periodic_feedback()
 
 void packet_led_information_data()
 {
-    led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
-    led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
-    led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
-    led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
-    led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
+    if (robot_operation.localization_success) {
+        led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
+        led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
+        led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
+        led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
+        led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
+    } else {
+        led_info.bucket1_angle_yaw_rad     = 0;
+        led_info.bucket2_angle_yaw_rad     = 0;
+        led_info.bucket3_angle_yaw_rad     = 0;
+        led_info.flag_angle_yaw_rad        = 0;
+        led_info.move_bucket_angle_yaw_rad = 0;
+    }
 }
 
 void stop_all_actuators()
@@ -222,8 +231,8 @@ void setup()
     motor_config_belt.set_motor_type(gn10_can::devices::MotorType::VESC);
 
     // Other device configuration
-    drive_power_manager_config.sensor_rate_ms            = 30;
-    drive_power_manager_config.use_remote_emergency_stop = false;
+    drive_power_manager_config.sensor_rate_ms            = 10;
+    drive_power_manager_config.use_remote_emergency_stop = ENABLE_REMOTE_EMS;
     logic_power_manager_config.sensor_rate_ms            = 100;
     logic_power_manager_config.use_remote_emergency_stop = false;
 
@@ -301,6 +310,14 @@ void loop()
     if (ether.receive_teleop(teleop)) {
         teleop_timeout          = false;
         last_teleop_received_ms = now_ms;
+
+        if (ENABLE_REMOTE_EMS) {
+            if (teleop.buttons.right_toggle_sw) {
+                drive_power_manager.set_stop(false);
+            } else {
+                drive_power_manager.set_stop(true);
+            }
+        }
 
         // コントローラ入力による状態遷移要求（左スティック押し込み等）
         state_machine.handle_teleop_input(teleop, last_teleop);

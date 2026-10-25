@@ -1,22 +1,64 @@
 @startuml state_machine_diagram
-[*] --> Standby : 制御系統電源投入
-Standby --> Ready : 通信・自己位置推定成功 (gn10-pointcloud-localization)
-Ready --> Moving : 自動移動命令 (gn10-navigation)
-Moving --> Fail : 自己位置推定/通信エラー、危険領域侵入
-Moving --> Goal : 目標地点に到着し誤差範囲内
-Moving --> Ready : 移動のキャンセル
-Goal --> Ready : 目標地点の誤差範囲外に出た
-Ready --> Tracking : 移動バケツ追従司令
-Tracking --> Fail : 移動バケツ見失い / 範囲外
-Tracking --> Ready : 移動バケツ追従司令解除
-Ready --> Fail : 自動移動不可能
-Fail --> Ready : 危険状態からの復帰
+title RobotStateMachine 状態遷移図
 
-Standby : 【手動操縦モード】全アクチュエータ手動
-Ready   : 【スタンバイ】移動:手動 | 射出:手動 | 威力:手動 | ハンド:自動
-Moving  : 【自動移動中】移動:自動 | 射出:手動 | 威力:自動 | ハンド:不可(安全ロック)
-Goal    : 【目標到着】移動:手動 | 射出:手動 | 威力:手動 | ハンド:自動
-Tracking: 【バケツ追従】水平移動:手動 | 回転:自動 | 射出:手動 | 威力:自動 | ハンド:不可
-Fail    : 【エラー安全退避】全アクチュエータ手動（安全フォールバック）
+skinparam state {
+    BorderColor #333333
+    FontColor #222222
+    AttributeFontColor #333333
+}
+skinparam ArrowColor #555555
+skinparam linetype ortho
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #BDB76B
+}
+
+[*] --> Stanby : 電源投入
+
+state "Stanby\n手動モード" as Stanby #DDEBF7
+state "Ready\n自動待機" as Ready #E2F0D9
+state "Moving\n自動移動" as Moving #C6E0B4
+state "Tracking\n移動バケツ追従" as Tracking #C6E0B4
+state "Goal\n目標到着" as Goal #FFF2CC
+state "Fail\n安全フォールバック" as Fail #F4CCCC
+
+' 基本経路: Jetson の navigation_status を同期する。
+Stanby -[#2F75B5]-> Ready : 自動モード\nlocalization_success
+Ready -[#548235]-> Moving : navigation_status = Moving
+Moving -[#548235]-> Goal : navigation_status = Goal
+Goal -[#2F75B5]-> Ready : navigation_status = Ready
+Ready -[#548235]-> Tracking : navigation_status = Tracking
+Tracking -[#2F75B5]-> Ready : 追従解除
+
+' ユーザー操作による安全な中断。
+Moving -[#BF9000]-> Ready : キャンセル
+Tracking -[#BF9000]-> Ready : キャンセル
+Ready -[#BF9000]-> Stanby : 手動モードへ切替
+
+' 全状態に適用されるため、個別の矢印は描かずに代表矢印と規則で表す。
+Stanby -[#C00000,dashed]-> Fail : 共通フェールセーフ
+
+note right of Fail
+  【全状態共通】
+  次のいずれかで Fail:
+  - operation 未受信が 200 ms 超
+  - localization_success == false
+
+  Fail 後は navigation_command = Sleep。
+  自動モードで正常な operation を
+  受信すると、その status に同期する。
+end note
+
+note bottom
+  色分け:
+  <#DDEBF7> 手動/待機
+  <#C6E0B4> 自動実行
+  <#FFF2CC> 到着
+  <#F4CCCC> 異常・安全退避
+
+  ※ operation 受信時は、現在状態に関係なく
+  latest_op.navigation_status を同期する。
+  図では同じ遷移の大量列挙を避けるため、
+  基本経路のみを表示している。
+end note
 @enduml
-
