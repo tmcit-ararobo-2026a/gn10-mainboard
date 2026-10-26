@@ -1,5 +1,5 @@
 /**
- * @file robot_data_config.hpp
+ * @file robot_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
  * @version 5.0
