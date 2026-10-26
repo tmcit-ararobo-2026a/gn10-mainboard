@@ -195,6 +195,8 @@ void packet_led_information_data()
         led_info.flag_angle_yaw        = INT8_MIN;
         led_info.move_bucket_angle_yaw = INT8_MIN;
     }
+    led_info.communication_status = !teleop_timeout;
+    led_info.navigation_status    = robot_operation.navigation_status;
 }
 
 void stop_all_actuators()
