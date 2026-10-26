@@ -47,7 +47,7 @@ constexpr float PULLEY_TEETH                      = 24.0f;
 // 装填機構
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f;
 constexpr uint32_t RELOAD_DELAY_MS  = 1200;
-constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.1f};
+constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.05f};
 // バケツ用アーム
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
@@ -183,18 +183,20 @@ void periodic_feedback()
 void packet_led_information_data()
 {
     if (robot_operation.localization_success) {
-        led_info.bucket1_angle_yaw_rad     = robot_operation.bucket1_angle_yaw;
-        led_info.bucket2_angle_yaw_rad     = robot_operation.bucket2_angle_yaw;
-        led_info.bucket3_angle_yaw_rad     = robot_operation.bucket3_angle_yaw;
-        led_info.flag_angle_yaw_rad        = robot_operation.flag_angle_yaw;
-        led_info.move_bucket_angle_yaw_rad = robot_operation.move_bucket_angle_yaw;
+        led_info.bucket1_angle_yaw     = robot_operation.bucket1_angle_yaw;
+        led_info.bucket2_angle_yaw     = robot_operation.bucket2_angle_yaw;
+        led_info.bucket3_angle_yaw     = robot_operation.bucket3_angle_yaw;
+        led_info.flag_angle_yaw        = robot_operation.flag_angle_yaw;
+        led_info.move_bucket_angle_yaw = robot_operation.move_bucket_angle_yaw;
     } else {
-        led_info.bucket1_angle_yaw_rad     = 0;
-        led_info.bucket2_angle_yaw_rad     = 0;
-        led_info.bucket3_angle_yaw_rad     = 0;
-        led_info.flag_angle_yaw_rad        = 0;
-        led_info.move_bucket_angle_yaw_rad = 0;
+        led_info.bucket1_angle_yaw     = INT8_MIN;
+        led_info.bucket2_angle_yaw     = INT8_MIN;
+        led_info.bucket3_angle_yaw     = INT8_MIN;
+        led_info.flag_angle_yaw        = INT8_MIN;
+        led_info.move_bucket_angle_yaw = INT8_MIN;
     }
+    led_info.communication_status = !teleop_timeout;
+    led_info.navigation_status    = robot_operation.navigation_status;
 }
 
 void stop_all_actuators()
@@ -545,18 +547,21 @@ void loop()
             dc_arm_height_encoder_initialized = true;
         }
     }
-
+    // 駆動系電源
     gn10_can::devices::power_manager::Sensor drive_power_sensor{};
     if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
         robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
         robot_feedback.drive_current          = drive_power_sensor.current;
     }
-    std::array<float, 4> voltages;
-    if (logic_power_manager.get_new_voltages(voltages)) {
-        led_info.battery_voltage[0] = voltages[0];
-        led_info.battery_voltage[1] = voltages[1];
+    float scaled_drive_v = std::clamp(robot_feedback.drive_battery_voltages * 10.0f, 0.0f, 255.0f);
+    led_info.drive_battery_level = static_cast<uint8_t>(scaled_drive_v);
+    // 制御系電源
+    std::array<float, 4> logic_power_voltages;
+    if (logic_power_manager.get_new_voltages(logic_power_voltages)) {
+        float min_v                  = std::min(logic_power_voltages[0], logic_power_voltages[1]);
+        float scaled                 = std::clamp(min_v * 10.0f, 0.0f, 255.0f);
+        led_info.logic_battery_level = static_cast<uint8_t>(scaled);
     }
-    led_info.battery_voltage[2] = robot_feedback.drive_battery_voltages;
     // 指令値を追加
     robot_feedback.command = state_machine.get_command();
     periodic_feedback();
@@ -577,7 +582,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     (void)RxFifo0ITs;
     if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO0)) return;
     if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO0)) return;
-    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO0)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO0, 10)) return;
 }
 
 /**
@@ -588,6 +593,6 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo1ITs)
     (void)RxFifo1ITs;
     if (process_fdcan_fifo(hfdcan, &hfdcan1, can1_bus, FDCAN_RX_FIFO1)) return;
     if (process_fdcan_fifo(hfdcan, &hfdcan2, fdcan2_bus, FDCAN_RX_FIFO1)) return;
-    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO1)) return;
+    if (process_fdcan_fifo(hfdcan, &hfdcan3, fdcan3_bus, FDCAN_RX_FIFO1, 10)) return;
 }
 }
