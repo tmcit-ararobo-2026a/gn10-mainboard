@@ -69,7 +69,7 @@ struct command_t {
 } __attribute__((__packed__));
 
 /**
- * @brief ロボットの動作 44byte
+ * @brief ロボットの動作
  *
  */
 struct operation_t {
