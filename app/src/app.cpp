@@ -409,7 +409,7 @@ void loop()
         if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
             belt_launcher_controller.set_deinit();
             belt_launcher_client.set_init();
-            robot_feedback.fire_counter = 0;
+            robot_feedback.shot_count = 0;
         }
 
         if (ctrl.belt_auto_velocity) {
@@ -430,7 +430,7 @@ void loop()
                 belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
                 robot_feedback.belt_launcher_target_velocity =
                     launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
-                robot_feedback.fire_counter++;
+                robot_feedback.shot_count++;
             }
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();

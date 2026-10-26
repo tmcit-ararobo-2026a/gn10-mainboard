@@ -125,7 +125,7 @@ struct feedback_t {
 
     // 自動操縦
     command_t command;  // 司令
-    uint8_t fire_counter;
+    uint8_t shot_count;
 } __attribute__((__packed__));
 
 union feedback_u {
