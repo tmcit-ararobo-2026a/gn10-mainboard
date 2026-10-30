@@ -2,8 +2,8 @@
  * @file robot_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
- * @version 5.0
- * @date 2026-10-26
+ * @version 5.2
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
