@@ -35,10 +35,10 @@ constexpr float LINER_VELOCITY_MAX   = 4.0f;
 constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
 constexpr float WHEEL_PID_GAINS[3]   = {0.05f, 0.0f, 0.0f};
 // ベルト直動
-constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 11.5f;
-constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.0f;
+constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 7.7f;
+constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 3.2f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
-constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
+constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.25f;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
 constexpr float BELT_LAUNCHER_COMPENSATION_RATIO  = 0.00f;  // [m/(s*V)]
 constexpr float MOTOR_POLES                       = 14.0f;
@@ -419,17 +419,15 @@ void loop()
 
         // 射出実行
         if (ctrl.belt_fire_trigger) {
-            float belt_launcher_target_vel = 0.0f;
+            float belt_launcher_target_vel = belt_launcher_controller.get_target_velocity();
+            robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
+
             if (belt_launcher_controller.fire(
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
-                ))
-
-            {
+                )) {
                 float belt_launcher_revision_erpm =
                     launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
                 belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
-                robot_feedback.belt_launcher_target_velocity =
-                    launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
                 robot_feedback.shot_count++;
             }
         }
@@ -506,18 +504,23 @@ void loop()
         robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
-    float belt_launcher_feedback_erpm{};
-    float belt_launcher_feedback_voltage{};
-    float belt_launcher_feedback_current{};
+    float belt_launcher_command_erpm{};  // ベルト直動制御基板がvescに送っているerpm数
+    float belt_launcher_current_erpm{};  // ベルト直動が実際に回っているerpm数
+    float belt_launcher_voltage{};
+    float belt_launcher_current{};
     if (belt_launcher_client.get_feedbacks(
-            belt_launcher_feedback_erpm,
-            belt_launcher_feedback_current,
-            belt_launcher_feedback_voltage
+            belt_launcher_command_erpm,
+            belt_launcher_current_erpm,
+            belt_launcher_voltage,
+            belt_launcher_current
         )) {
+        robot_feedback.belt_launcher_command_velocity =
+            launcher_revision.erpm_to_velocity(belt_launcher_command_erpm);
         robot_feedback.belt_launcher_velocity =
-            launcher_revision.erpm_to_velocity(belt_launcher_feedback_erpm);
-        robot_feedback.belt_launcher_voltage = belt_launcher_feedback_voltage;
-        robot_feedback.belt_launcher_current = belt_launcher_feedback_current;
+            launcher_revision.erpm_to_velocity(belt_launcher_current_erpm);
+
+        robot_feedback.belt_launcher_voltage = belt_launcher_voltage;
+        robot_feedback.belt_launcher_current = belt_launcher_current;
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {

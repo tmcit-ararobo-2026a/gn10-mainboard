@@ -2,8 +2,8 @@
  * @file robot_config.hpp
  * @author tmcit-ararobo-2026a
  * @brief ロボットの通信データ構造体定義
- * @version 5.0
- * @date 2026-10-26
+ * @version 5.2
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
@@ -117,11 +117,12 @@ struct feedback_t {
     float drive_current;
 
     // 各デバイスのフィードバック
-    float wheel_angular_velocity[3];      // 0:front 1:left 2:right
-    float belt_launcher_target_velocity;  // 目標速度[m/s]
-    float belt_launcher_velocity;         // 現在のベルト直動の速度[m/s]
-    float belt_launcher_voltage;          // VESCで読んだ電圧[V]
-    float belt_launcher_current;          // VESCで読んだ電流[A]
+    float wheel_angular_velocity[3];       // 0:front 1:left 2:right
+    float belt_launcher_target_velocity;   // 目標速度[m/s]
+    float belt_launcher_command_velocity;  // 司令速度[m/s]
+    float belt_launcher_velocity;          // 現在のベルト直動の速度[m/s]
+    float belt_launcher_voltage;           // VESCで読んだ電圧[V]
+    float belt_launcher_current;           // VESCで読んだ電流[A]
 
     // 自動操縦
     command_t command;  // 司令
@@ -133,7 +134,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 43);
+static_assert(sizeof(feedback_t) == 47);
 
 /**
  * @brief ロボットの操縦信号値
