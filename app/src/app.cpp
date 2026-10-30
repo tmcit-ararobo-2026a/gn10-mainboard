@@ -35,7 +35,7 @@ constexpr float LINER_VELOCITY_MAX   = 4.0f;
 constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
 constexpr float WHEEL_PID_GAINS[3]   = {0.05f, 0.0f, 0.0f};
 // ベルト直動
-constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 11.5f;
+constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 7.7f;
 constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.0f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.5f;
@@ -419,17 +419,15 @@ void loop()
 
         // 射出実行
         if (ctrl.belt_fire_trigger) {
-            float belt_launcher_target_vel = 0.0f;
+            float belt_launcher_target_vel = belt_launcher_controller.get_target_velocity();
+            robot_feedback.belt_launcher_target_velocity = belt_launcher_target_vel;
+
             if (belt_launcher_controller.fire(
                     belt_launcher_target_vel, robot_feedback.drive_battery_voltages
-                ))
-
-            {
+                )) {
                 float belt_launcher_revision_erpm =
                     launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
                 belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
-                robot_feedback.belt_launcher_target_velocity =
-                    launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
                 robot_feedback.shot_count++;
             }
         }
@@ -516,10 +514,11 @@ void loop()
             belt_launcher_voltage,
             belt_launcher_current
         )) {
-        robot_feedback.belt_launcher_velocity =
-            launcher_revision.erpm_to_velocity(belt_launcher_command_erpm);
         robot_feedback.belt_launcher_command_velocity =
+            launcher_revision.erpm_to_velocity(belt_launcher_command_erpm);
+        robot_feedback.belt_launcher_velocity =
             launcher_revision.erpm_to_velocity(belt_launcher_current_erpm);
+
         robot_feedback.belt_launcher_voltage = belt_launcher_voltage;
         robot_feedback.belt_launcher_current = belt_launcher_current;
     }
