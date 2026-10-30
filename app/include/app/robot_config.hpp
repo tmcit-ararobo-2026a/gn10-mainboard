@@ -134,7 +134,7 @@ union feedback_u {
     uint8_t binary[sizeof(feedback_t)];
 } __attribute__((__packed__));
 
-static_assert(sizeof(feedback_t) == 43);
+static_assert(sizeof(feedback_t) == 47);
 
 /**
  * @brief ロボットの操縦信号値
