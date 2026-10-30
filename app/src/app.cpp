@@ -35,8 +35,8 @@ constexpr float LINER_VELOCITY_MAX   = 4.0f;
 constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
 constexpr float WHEEL_PID_GAINS[3]   = {0.05f, 0.0f, 0.0f};
 // ベルト直動
-constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 7.5f;
-constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 3.0f;
+constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 7.7f;
+constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 3.2f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.25f;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
