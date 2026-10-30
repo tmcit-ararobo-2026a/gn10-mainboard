@@ -504,8 +504,8 @@ void loop()
         robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
-    float belt_launcher_command_erpm{};  // ベルト直動が送っているerpm数
-    float belt_launcher_current_erpm{};  // ベルト直動が実際に回っているerpm数 ※指令値ではない
+    float belt_launcher_command_erpm{};  // ベルト直動制御基板がvescに送っているerpm数
+    float belt_launcher_current_erpm{};  // ベルト直動が実際に回っているerpm数
     float belt_launcher_voltage{};
     float belt_launcher_current{};
     if (belt_launcher_client.get_feedbacks(
