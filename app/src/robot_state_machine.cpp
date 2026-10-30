@@ -18,6 +18,12 @@ void RobotStateMachine::update(
             if (!latest_op.localization_success) {
                 current_status_ = robot_config::NavigationStatus::Fail;
             }
+
+            // ナビゲーション完了（Goal到達）または失敗（Fail）時は、自動的にStanbyへ復帰させ、次回のTargetId指定時のトリガを確実に受け付けるようにする
+            if (current_status_ == robot_config::NavigationStatus::Goal ||
+                current_status_ == robot_config::NavigationStatus::Fail) {
+                command_.navigation_command = robot_config::NavigationCommand::Stanby;
+            }
         }
     } else {
         // 通信途絶時の安全フェールセーフ
