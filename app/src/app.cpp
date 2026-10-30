@@ -428,8 +428,8 @@ void loop()
                 float belt_launcher_revision_erpm =
                     launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
                 belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
-                // robot_feedback.belt_launcher_target_velocity =
-                //  launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
+                robot_feedback.belt_launcher_target_velocity =
+                    launcher_revision.erpm_to_velocity(belt_launcher_revision_erpm);
                 robot_feedback.shot_count++;
             }
         }
@@ -506,23 +506,22 @@ void loop()
         robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
-    float
-        belt_launcher_feedback_rotate_erpm{};  // ベルト直動が実際に回っているerpm数 ※指令値ではない
-    float belt_launcher_feedback_send_erpm{};  // ベルト直動に指令値として送っている値
-    float belt_launcher_feedback_voltage{};
-    float belt_launcher_feedback_current{};
+    float belt_launcher_command_erpm{};  // ベルト直動が送っているerpm数
+    float belt_launcher_current_erpm{};  // ベルト直動が実際に回っているerpm数 ※指令値ではない
+    float belt_launcher_voltage{};
+    float belt_launcher_current{};
     if (belt_launcher_client.get_feedbacks(
-            belt_launcher_feedback_rotate_erpm,
-            belt_launcher_feedback_send_erpm,
-            belt_launcher_feedback_current,
-            belt_launcher_feedback_voltage
+            belt_launcher_command_erpm,
+            belt_launcher_current_erpm,
+            belt_launcher_voltage,
+            belt_launcher_current
         )) {
         robot_feedback.belt_launcher_velocity =
-            launcher_revision.erpm_to_velocity(belt_launcher_feedback_rotate_erpm);
-        robot_feedback.belt_launcher_target_velocity =
-            launcher_revision.erpm_to_velocity(belt_launcher_feedback_send_erpm);
-        robot_feedback.belt_launcher_voltage = belt_launcher_feedback_voltage;
-        robot_feedback.belt_launcher_current = belt_launcher_feedback_current;
+            launcher_revision.erpm_to_velocity(belt_launcher_command_erpm);
+        robot_feedback.belt_launcher_command_velocity =
+            launcher_revision.erpm_to_velocity(belt_launcher_current_erpm);
+        robot_feedback.belt_launcher_voltage = belt_launcher_voltage;
+        robot_feedback.belt_launcher_current = belt_launcher_current;
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
