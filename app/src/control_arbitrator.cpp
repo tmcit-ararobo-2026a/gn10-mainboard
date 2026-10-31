@@ -81,8 +81,8 @@ ArbitratedControl ControlArbitrator::arbitrate(
 
             // ハンド操作：手動
             result.arm_height_target = teleop_arm_height;
-            result.arm_hold_target   = teleop_arm_hold;
-            result.arm_width_target  = teleop_arm_width;
+            result.arm_hold_target   = -teleop_arm_hold;
+            result.arm_width_target  = -teleop_arm_width;
             break;
     }
 
