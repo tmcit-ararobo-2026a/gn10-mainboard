@@ -474,7 +474,7 @@ void loop()
         // --- 8. バケツ用アーム ---
         float arm_height_target                  = ctrl.arm_height_target;
         arm_hold_and_loading_and_width_target[1] = ctrl.arm_width_target;
-        arm_hold_and_loading_and_width_target[2] = ctrl.arm_hold_target;
+        arm_hold_and_loading_and_width_target[2] = -ctrl.arm_hold_target;
 
         // 装填
         belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
