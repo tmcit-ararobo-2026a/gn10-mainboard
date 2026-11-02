@@ -497,12 +497,38 @@ void loop()
     packet_led_information_data();
 
     // フィードバック処理と送信
+    // 駆動系電源
+    gn10_can::devices::power_manager::Status drive_power_status{};
+    if (drive_power_manager.get_new_status(drive_power_status)) {
+        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
+    }
+    gn10_can::devices::power_manager::Sensor drive_power_sensor{};
+    if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
+        robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
+        robot_feedback.drive_current          = drive_power_sensor.current;
+    }
+    float scaled_drive_v = std::clamp(robot_feedback.drive_battery_voltages * 10.0f, 0.0f, 255.0f);
+    led_info.drive_battery_level = static_cast<uint8_t>(scaled_drive_v);
+    // 制御系電源
+    std::array<float, 4> logic_power_voltages;
+    if (logic_power_manager.get_new_voltages(logic_power_voltages)) {
+        float min_v                  = std::min(logic_power_voltages[0], logic_power_voltages[1]);
+        float scaled                 = std::clamp(min_v * 10.0f, 0.0f, 255.0f);
+        led_info.logic_battery_level = static_cast<uint8_t>(scaled);
+    }
+    // 足回り
     std::array<float, 4> wheel_feedbacks{};
     if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
         robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
         robot_feedback.wheel_angular_velocity[1] = wheel_feedbacks[1];  // left
         robot_feedback.wheel_angular_velocity[2] = wheel_feedbacks[2];  // right
     }
+    // ベルト直動原点復帰
+    float belt_launcher_initial_angle{};
+    if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
+        belt_launcher_controller.set_initial_point(now_ms);
+    }
+    // ベルト直動高頻度フィードバック
     float belt_launcher_command_erpm{};  // ベルト直動制御基板がvescに送っているerpm数
     float belt_launcher_current_erpm{};  // ベルト直動が実際に回っているerpm数
     float belt_launcher_voltage{};
@@ -521,15 +547,7 @@ void loop()
         robot_feedback.belt_launcher_voltage = belt_launcher_voltage;
         robot_feedback.belt_launcher_current = belt_launcher_current;
     }
-    float belt_launcher_initial_angle{};
-    if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
-        belt_launcher_controller.set_initial_point(now_ms);
-    }
-    gn10_can::devices::power_manager::Status drive_power_status{};
-    if (drive_power_manager.get_new_status(drive_power_status)) {
-        robot_feedback.emergency_stop_enabled = drive_power_status.emergency_stop_enabled;
-    }
-
+    // 装填機構
     std::array<float, 4> loading_feedback = {};
     if (esc_arm_hold_and_loading_and_width.get_feedbacks(loading_feedback.data())) {
         // 非常停止中は、高速更新されるCANフィードバック受信のたびに目標角度を更新する
@@ -537,7 +555,7 @@ void loop()
             belt_launcher_controller.set_reload_angle(loading_feedback[0]);
         }
     }
-
+    // ハンド機構
     float latest_arm_height_motor_angle = -dc_arm_height.feedback_value();  // 降下方向を+とする
     bucket_arm.set_height_motor_angle(latest_arm_height_motor_angle);
     // ゼロ点合わせが済んだ
@@ -548,21 +566,6 @@ void loop()
             dc_arm_height.set_init(motor_config_arm_height);
             dc_arm_height_encoder_initialized = true;
         }
-    }
-    // 駆動系電源
-    gn10_can::devices::power_manager::Sensor drive_power_sensor{};
-    if (drive_power_manager.get_new_sensor(drive_power_sensor)) {
-        robot_feedback.drive_battery_voltages = drive_power_sensor.voltage;
-        robot_feedback.drive_current          = drive_power_sensor.current;
-    }
-    float scaled_drive_v = std::clamp(robot_feedback.drive_battery_voltages * 10.0f, 0.0f, 255.0f);
-    led_info.drive_battery_level = static_cast<uint8_t>(scaled_drive_v);
-    // 制御系電源
-    std::array<float, 4> logic_power_voltages;
-    if (logic_power_manager.get_new_voltages(logic_power_voltages)) {
-        float min_v                  = std::min(logic_power_voltages[0], logic_power_voltages[1]);
-        float scaled                 = std::clamp(min_v * 10.0f, 0.0f, 255.0f);
-        led_info.logic_battery_level = static_cast<uint8_t>(scaled);
     }
     // 指令値を追加
     robot_feedback.command = state_machine.get_command();
