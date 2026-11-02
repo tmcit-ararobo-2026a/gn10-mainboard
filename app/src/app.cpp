@@ -523,7 +523,7 @@ void loop()
     }
     float belt_launcher_initial_angle{};
     if (belt_launcher_client.get_initial_point(belt_launcher_initial_angle)) {
-        belt_launcher_controller.set_initial_point(HAL_GetTick());
+        belt_launcher_controller.set_initial_point(now_ms);
     }
     gn10_can::devices::power_manager::Status drive_power_status{};
     if (drive_power_manager.get_new_status(drive_power_status)) {
