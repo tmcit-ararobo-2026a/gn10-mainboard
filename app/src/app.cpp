@@ -308,7 +308,7 @@ void loop()
 {
     const uint32_t now_ms = HAL_GetTick();
 
-    // 1. コントローラ（Teleop）受信とアクチュエータ駆動
+    // コントローラ（Teleop）受信とアクチュエータ駆動
     if (ether.receive_teleop(teleop)) {
         teleop_timeout          = false;
         last_teleop_received_ms = now_ms;
@@ -326,7 +326,7 @@ void loop()
 
         const bool is_auto_mode = state_machine.is_auto_mode_enabled();
 
-        // --- 1. 足回り手動入力（全モード共通: 左右アナログスティック） ---
+        // 足回り手動入力（全モード共通: 左右アナログスティック）
         const float teleop_vx =
             std::clamp(static_cast<float>(teleop.analog.stick_left[0]) / INT8_MAX, -1.0f, 1.0f) *
             LINER_VELOCITY_MAX;
@@ -337,7 +337,7 @@ void loop()
             std::clamp(static_cast<float>(teleop.analog.stick_right[0]) / INT8_MAX, -1.0f, 1.0f) *
             ANGULAR_VELOCITY_MAX;
 
-        // --- 2. 射出トリガー（全モード共通: L1 / R1 スイッチ） ---
+        // 射出トリガー（全モード共通: L1 / R1 スイッチ）
         // right_trigger: ベルト直動射出 (押下エッジ)
         const bool belt_fire_trigger =
             teleop.buttons.right_trigger && !last_teleop.buttons.right_trigger;
@@ -345,7 +345,7 @@ void loop()
         const bool air_fire_trigger =
             teleop.buttons.left_trigger && !last_teleop.buttons.left_trigger;
 
-        // --- 3. 手動モード時のアクチュエータ入力処理 (teleop_key_config.md 第3.1項) ---
+        // 手動モード時のアクチュエータ入力処理
         float teleop_arm_height = 0.0f;
         float teleop_arm_hold   = 0.0f;
         float teleop_arm_width  = 0.0f;
@@ -379,7 +379,7 @@ void loop()
             }
         }
 
-        // --- 4. 操作権限の調停 (Arbitration) ---
+        // 操作権限の調停
         const ArbitratedControl ctrl = ControlArbitrator::arbitrate(
             state_machine.get_status(),
             teleop,
@@ -394,7 +394,7 @@ void loop()
             teleop_arm_width
         );
 
-        // --- 5. 足回り（オムニ）出力 ---
+        // 足回り（オムニ）出力
         constexpr float robot_yaw_angle = 0.0f;
         omni.convert(-ctrl.chassis_vx, ctrl.chassis_vy, ctrl.chassis_vyaw, robot_yaw_angle);
         float front = 0.0f, right = 0.0f, left = 0.0f;
@@ -404,7 +404,7 @@ void loop()
         };
         esc_wheel.set_targets(wheel_targets.data());
 
-        // --- 6. ベルト直動 ---
+        // ベルト直動
         // 右スティック押し込み: ベルト直動初期化 (全モード共通)
         if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
             belt_launcher_controller.set_deinit();
@@ -433,8 +433,7 @@ void loop()
         }
         led_info.belt_initialization = belt_launcher_controller.get_fire_ready();
 
-        // --- 7. エアシリンダ制御 ---
-        const uint32_t now_ms = HAL_GetTick();
+        // エアシリンダ制御
         std::array<bool, 8> solenoid_targets{};
         solenoid_targets[0] = 1;  // 空圧レギュレータ電源用
 
@@ -490,14 +489,14 @@ void loop()
         stop_all_actuators();
     }
 
-    // 2. Jetsonからの operation 受信と状態機械の更新（タイムアウト監視含む）
+    // Jetsonからの operation 受信と状態の更新（タイムアウト監視含む）
     const bool operation_received = ether.receive_operation_data(robot_operation);
     state_machine.update(now_ms, operation_received, robot_operation);
 
-    // 3. LED表示情報の更新
+    // LED表示情報の更新
     packet_led_information_data();
 
-    // 4. フィードバック処理と送信
+    // フィードバック処理と送信
     std::array<float, 4> wheel_feedbacks{};
     if (esc_wheel.get_feedbacks(wheel_feedbacks.data())) {
         robot_feedback.wheel_angular_velocity[0] = wheel_feedbacks[0];  // front
@@ -571,7 +570,7 @@ void loop()
 
     last_teleop = teleop;
 
-    // 5. システム生存表示（青LED）
+    // システム生存表示（青LED）
     update_heartbeat_led();
 }
 
