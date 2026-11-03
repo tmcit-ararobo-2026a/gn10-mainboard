@@ -79,11 +79,11 @@ void RobotStateMachine::handle_teleop_input(
     // 右十字キー: 上(Desk1), 下(Desk2), 左(Flag), 右(MovingBucket: 長押し追従)
 
     // 移動バケツ追従 (右十字キー 右): ボタン長押し中のみ追従
-    if (teleop.buttons.right_right) {
+    if (teleop.buttons.left_up) {
         command_.target_id          = robot_config::TargetId::MovingBucket;
         command_.navigation_command = robot_config::NavigationCommand::Move;
         return;
-    } else if (last_teleop.buttons.right_right && !teleop.buttons.right_right) {
+    } else if (last_teleop.buttons.left_up && !teleop.buttons.left_up) {
         // ボタンを離したら追従終了（Stanbyに戻す）
         if (command_.target_id == robot_config::TargetId::MovingBucket) {
             command_.navigation_command = robot_config::NavigationCommand::Stanby;
@@ -91,25 +91,25 @@ void RobotStateMachine::handle_teleop_input(
     }
 
     // 固定ターゲット（ボタン押下エッジで目標地点へ自動移動開始）
-    if (teleop.buttons.left_up && !last_teleop.buttons.left_up) {
+    if (teleop.buttons.right_up && !last_teleop.buttons.right_up) {
         command_.target_id          = robot_config::TargetId::FixedBucket1;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.left_right && !last_teleop.buttons.left_right) {
+    } else if (teleop.buttons.right_right && !last_teleop.buttons.right_right) {
         command_.target_id          = robot_config::TargetId::FixedBucket2;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.left_down && !last_teleop.buttons.left_down) {
+    } else if (teleop.buttons.right_left && !last_teleop.buttons.right_left) {
         command_.target_id          = robot_config::TargetId::FixedBucket3;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.left_left && !last_teleop.buttons.left_left) {
+    } else if (teleop.buttons.left_down && !last_teleop.buttons.left_down) {
         command_.target_id          = robot_config::TargetId::StartZone;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.right_up && !last_teleop.buttons.right_up) {
+    } else if (teleop.buttons.left_right && !last_teleop.buttons.left_right) {
         command_.target_id          = robot_config::TargetId::Desk1;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.right_down && !last_teleop.buttons.right_down) {
+    } else if (teleop.buttons.left_left && !last_teleop.buttons.left_left) {
         command_.target_id          = robot_config::TargetId::Desk2;
         command_.navigation_command = robot_config::NavigationCommand::Move;
-    } else if (teleop.buttons.right_left && !last_teleop.buttons.right_left) {
+    } else if (teleop.buttons.right_down && !last_teleop.buttons.right_down) {
         command_.target_id          = robot_config::TargetId::Flag;
         command_.navigation_command = robot_config::NavigationCommand::Move;
     }
