@@ -57,11 +57,11 @@ constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // エアシリンダ
 // 射出命令が切れてからエアシリンダを収納するまでの時間[ms]
-constexpr uint32_t AIR_STORAGE_DELAY_MS = 2400;
+constexpr uint32_t AIR_STORAGE_DELAY_MS = 1000;
 // エアシリンダを射出する際の開放時間[ms]
-constexpr uint32_t AIR_FIRE_LENGTH_MS = 100;
+constexpr uint32_t AIR_FIRE_LENGTH_MS = 500;
 // エアシリンダを収納する際の開放時間[ms]
-constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 400;
+constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 300;
 constexpr uint32_t AIR_LAUNCHER_RIGHT_INDEX = 0;
 constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
@@ -443,28 +443,31 @@ void loop()
             solenoid_targets[solenoid_index] = true;
             air_launcher[selected_air_launcher_index].last_fire_tick_ms = now_ms;
             air_launcher[selected_air_launcher_index].fired             = true;
+            air_launcher[selected_air_launcher_index].storaging         = false;
         }
 
         for (uint32_t i = 0; i < 2; i++) {
+            bool fire_solenoid_on = false;
             if (air_launcher[i].fired) {
-                uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
-                if (elapsed_time_ms > AIR_FIRE_LENGTH_MS + AIR_STORAGE_DELAY_MS) {
+                const uint32_t elapsed_time_ms = now_ms - air_launcher[i].last_fire_tick_ms;
+                if (elapsed_time_ms < AIR_FIRE_LENGTH_MS) {
+                    fire_solenoid_on = true;
+                } else if (elapsed_time_ms >= AIR_FIRE_LENGTH_MS + AIR_STORAGE_DELAY_MS) {
                     air_launcher[i].fired                   = false;
                     air_launcher[i].storaging               = true;
                     air_launcher[i].start_storaging_tick_ms = now_ms;
                 }
             }
             if (air_launcher[i].storaging) {
-                uint32_t elapsed_time_ms = now_ms - air_launcher[i].start_storaging_tick_ms;
-                if (elapsed_time_ms > AIR_STORAGE_LENGTH_MS) {
+                const uint32_t elapsed_time_ms = now_ms - air_launcher[i].start_storaging_tick_ms;
+                if (elapsed_time_ms >= AIR_STORAGE_LENGTH_MS) {
                     air_launcher[i].fired     = false;
                     air_launcher[i].storaging = false;
                 }
             }
-            solenoid_targets[i + 1] = (uint8_t)air_launcher[i].fired;
+            solenoid_targets[i + 1] = fire_solenoid_on;
+            solenoid_targets[i + 5] = air_launcher[i].storaging;
         }
-        solenoid_targets[5] = (uint8_t)air_launcher[0].storaging;
-        solenoid_targets[6] = (uint8_t)air_launcher[1].storaging;
 
         led_info.air_injection =
             (solenoid_targets[0] || solenoid_targets[1] || solenoid_targets[2]);
