@@ -61,7 +61,7 @@ constexpr uint32_t AIR_STORAGE_DELAY_MS = 1000;
 // エアシリンダを射出する際の開放時間[ms]
 constexpr uint32_t AIR_FIRE_LENGTH_MS = 500;
 // エアシリンダを収納する際の開放時間[ms]
-constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 300;
+constexpr uint32_t AIR_STORAGE_LENGTH_MS    = 500;
 constexpr uint32_t AIR_LAUNCHER_RIGHT_INDEX = 0;
 constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
