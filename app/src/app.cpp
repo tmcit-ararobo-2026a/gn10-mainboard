@@ -52,7 +52,7 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.05f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
-constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 2.0f;    // [A]
+constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 700.0f;  // [A]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // エアシリンダ
@@ -253,12 +253,13 @@ void setup()
     );
 
     // バケツの横軸
-    motor_config_arm_width.set_max_duty_ratio(1.0f);
+    motor_config_arm_width.set_max_duty_ratio(10.0f);
     motor_config_arm_width.set_motor_type(gn10_can::devices::MotorType::C610);
-    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::None);
+    motor_config_arm_width.set_encoder_type(gn10_can::devices::EncoderType::InternalIncremental);
     motor_config_arm_width.set_forward_limit_switch(true, 0);
     motor_config_arm_width.set_reverse_limit_switch(true, 1);
     esc_arm_hold_and_loading_and_width.set_init(1, motor_config_arm_width);
+    esc_arm_hold_and_loading_and_width.set_gains(1, 0.2f, 0.0f, 0.0f, 0.0f);
     // 雑巾保持
     motor_config_hand.set_max_duty_ratio(1.0f);
     motor_config_hand.set_motor_type(gn10_can::devices::MotorType::C610);
