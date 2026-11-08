@@ -36,7 +36,7 @@ constexpr float ANGULAR_VELOCITY_MAX = 4.5f;
 constexpr float WHEEL_PID_GAINS[3]   = {0.05f, 0.0f, 0.0f};
 // ベルト直動
 constexpr float BELT_LAUNCHER_MAX_VELOCITY        = 7.50f;
-constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 3.00f;
+constexpr float BELT_LAUNCHER_MIN_VELOCITY        = 2.85f;
 constexpr float BELT_LAUNCHER_DEFAULT_VELOCITY    = 4.0f;
 constexpr float BELT_LAUNCHER_ADJUSTMENT_VELOCITY = 0.15;
 constexpr float BELT_LAUNCHER_REFERENCE_VOLTAGE   = 19.8f;  // [V]
@@ -47,7 +47,7 @@ constexpr float PULLEY_TEETH                      = 24.0f;
 // 装填機構
 constexpr float RELOAD_ANGLE_DELTA  = -(float)M_PI * 2.0f / 3.0f;
 constexpr uint32_t RELOAD_DELAY_MS  = 1200;
-constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.05f};
+constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, 0.0f};
 // バケツ用アーム
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
@@ -406,7 +406,8 @@ void loop()
         float front = 0.0f, right = 0.0f, left = 0.0f;
         omni.getWheelAngularVelocity(&front, &left, &right);
         const std::array<float, 4> wheel_targets{
-            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f};
+            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
+        };
         esc_wheel.set_targets(wheel_targets.data());
 
         // ベルト直動
@@ -492,7 +493,8 @@ void loop()
         belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
 
         // CAN通信
-        esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data()
+        esc_arm_hold_and_loading_and_width.set_targets(
+            arm_hold_and_loading_and_width_target.data()
         );
         dc_arm_height.set_target(arm_height_target);
     } else if ((now_ms - last_teleop_received_ms) > TELEOP_TIMEOUT_MS && !teleop_timeout) {
