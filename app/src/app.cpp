@@ -67,11 +67,13 @@ constexpr uint32_t AIR_LAUNCHER_LEFT_INDEX  = 1;
 // 機械定数
 constexpr float M3508_GEAR_RATIO = 19.0f;
 // 処理定数
-constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS = 500;
-constexpr uint32_t FEEDBACK_INTERVAL_MS         = 20;
-constexpr uint32_t ETHER_INIT_DELAY_MS          = 1000;
-constexpr uint32_t TELEOP_TIMEOUT_MS            = 100;
-constexpr uint32_t OPERATION_TIMEOUT_MS         = 100;
+constexpr uint32_t HEARTBEAT_TOGGLE_INTERVAL_MS       = 500;
+constexpr uint32_t FEEDBACK_INTERVAL_MS               = 20;
+constexpr uint32_t ETHER_INIT_DELAY_MS                = 1000;
+constexpr uint32_t TELEOP_TIMEOUT_MS                  = 100;
+constexpr uint32_t OPERATION_TIMEOUT_MS               = 100;
+constexpr uint32_t BELT_FIRE_COMMAND_SEND_INTERVAL_MS = 10;
+constexpr uint8_t BELT_FIRE_COMMAND_REMAIN_COUNT      = 5;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::MotorConfig motor_config_wheel;
@@ -116,6 +118,9 @@ BeltLauncherController belt_launcher_controller(
     BELT_LAUNCHER_MAX_VELOCITY, BELT_LAUNCHER_MIN_VELOCITY
 );
 LauncherRevision launcher_revision(MOTOR_POLES, BELT_PITCH, PULLEY_TEETH);
+uint8_t belt_fire_command_remain_count  = 0;
+float belt_fire_command_target_erpm     = 0.0f;
+uint32_t last_belt_fire_command_send_ms = 0;
 
 // バケツアーム
 bool dc_arm_height_encoder_initialized = false;
@@ -201,6 +206,7 @@ void packet_led_information_data()
 
 void stop_all_actuators()
 {
+    belt_fire_command_remain_count = 0;
     std::array<float, 4> esc_target_zero{};
     esc_wheel.set_targets(esc_target_zero.data());
     // esc_arm_hold_and_loading.set_targets(esc_target_zero.data());
@@ -400,8 +406,7 @@ void loop()
         float front = 0.0f, right = 0.0f, left = 0.0f;
         omni.getWheelAngularVelocity(&front, &left, &right);
         const std::array<float, 4> wheel_targets{
-            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
-        };
+            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f};
         esc_wheel.set_targets(wheel_targets.data());
 
         // ベルト直動
@@ -409,7 +414,8 @@ void loop()
         if (teleop.buttons.stick_push_right && !last_teleop.buttons.stick_push_right) {
             belt_launcher_controller.set_deinit();
             belt_launcher_client.set_init();
-            robot_feedback.shot_count = 0;
+            robot_feedback.shot_count      = 0;
+            belt_fire_command_remain_count = 0;
         }
 
         if (ctrl.belt_auto_velocity) {
@@ -427,7 +433,11 @@ void loop()
                 )) {
                 float belt_launcher_revision_erpm =
                     launcher_revision.velocity_to_revision_erpm(belt_launcher_target_vel);
+                // 1回きりの直接送信をやめ、複数回送信カウンタをセット
                 belt_launcher_client.send_fire_command(belt_launcher_revision_erpm);
+                belt_fire_command_target_erpm  = belt_launcher_revision_erpm;
+                belt_fire_command_remain_count = BELT_FIRE_COMMAND_REMAIN_COUNT;
+                last_belt_fire_command_send_ms = now_ms;
                 robot_feedback.shot_count++;
             }
         }
@@ -482,8 +492,7 @@ void loop()
         belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
 
         // CAN通信
-        esc_arm_hold_and_loading_and_width.set_targets(
-            arm_hold_and_loading_and_width_target.data()
+        esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data()
         );
         dc_arm_height.set_target(arm_height_target);
     } else if ((now_ms - last_teleop_received_ms) > TELEOP_TIMEOUT_MS && !teleop_timeout) {
@@ -549,6 +558,11 @@ void loop()
 
         robot_feedback.belt_launcher_voltage = belt_launcher_voltage;
         robot_feedback.belt_launcher_current = belt_launcher_current;
+
+        // vesc-hubが射出動作を開始した場合は残りの送信を停止
+        if (std::abs(belt_launcher_command_erpm) > 0.0f) {
+            belt_fire_command_remain_count = 0;
+        }
     }
     // 装填機構
     std::array<float, 4> loading_feedback = {};
@@ -578,6 +592,14 @@ void loop()
 
     // システム生存表示（青LED）
     update_heartbeat_led();
+
+    // ベルト直動射出コマンドの分散送信 (パケットロス対策)
+    if (belt_fire_command_remain_count > 0 &&
+        (now_ms - last_belt_fire_command_send_ms) >= BELT_FIRE_COMMAND_SEND_INTERVAL_MS) {
+        belt_launcher_client.send_fire_command(belt_fire_command_target_erpm);
+        last_belt_fire_command_send_ms = now_ms;
+        belt_fire_command_remain_count--;
+    }
 }
 
 // ---------------------------- C language's functions override ----------------------------------
