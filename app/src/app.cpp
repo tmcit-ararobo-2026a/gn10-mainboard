@@ -52,7 +52,7 @@ constexpr float RELOAD_PID_GAINS[3] = {-1.25f, 0.0f, -0.05f};
 constexpr float BUCKET_ARM_HEIGHT_PULLEY_RADIUS = 0.04f;   // [m]
 constexpr float BUCKET_ARM_HEIGHT_MAX           = 0.6f;    // [m]
 constexpr float BUCKET_ARM_HEIGHT_MIN           = 0.075f;  // [m]
-constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 2.0f;    // [A]
+constexpr float BUCKET_ARM_WIDTH_SPEED_RATIO    = 4.0f;    // [A]
 constexpr float BUCKET_ARM_HOLD_FORCE           = 2.0f;    // [A]
 constexpr float BUCKET_ARM_RELEASE_FORCE        = 1.0f;    // [A]
 // エアシリンダ
