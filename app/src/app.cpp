@@ -74,8 +74,6 @@ constexpr uint32_t TELEOP_TIMEOUT_MS                  = 100;
 constexpr uint32_t OPERATION_TIMEOUT_MS               = 100;
 constexpr uint32_t BELT_FIRE_COMMAND_SEND_INTERVAL_MS = 10;
 constexpr uint8_t BELT_FIRE_COMMAND_REMAIN_COUNT      = 5;
-constexpr uint32_t BELT_FIRE_COMMAND_SEND_INTERVAL_MS = 10;
-constexpr uint8_t BELT_FIRE_COMMAND_REMAIN_COUNT      = 5;
 /* ---------------------- gn10-can ---------------------- */
 // Device Configuration
 gn10_can::devices::MotorConfig motor_config_wheel;
@@ -120,9 +118,6 @@ BeltLauncherController belt_launcher_controller(
     BELT_LAUNCHER_MAX_VELOCITY, BELT_LAUNCHER_MIN_VELOCITY
 );
 LauncherRevision launcher_revision(MOTOR_POLES, BELT_PITCH, PULLEY_TEETH);
-uint8_t belt_fire_command_remain_count  = 0;
-float belt_fire_command_target_erpm     = 0.0f;
-uint32_t last_belt_fire_command_send_ms = 0;
 uint8_t belt_fire_command_remain_count  = 0;
 float belt_fire_command_target_erpm     = 0.0f;
 uint32_t last_belt_fire_command_send_ms = 0;
@@ -411,8 +406,7 @@ void loop()
         float front = 0.0f, right = 0.0f, left = 0.0f;
         omni.getWheelAngularVelocity(&front, &left, &right);
         const std::array<float, 4> wheel_targets{
-            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f
-        };
+            front * M3508_GEAR_RATIO, left * M3508_GEAR_RATIO, right * M3508_GEAR_RATIO, 0.0f};
         esc_wheel.set_targets(wheel_targets.data());
 
         // ベルト直動
@@ -498,8 +492,7 @@ void loop()
         belt_launcher_controller.load_a_cloth(arm_hold_and_loading_and_width_target[0], now_ms);
 
         // CAN通信
-        esc_arm_hold_and_loading_and_width.set_targets(
-            arm_hold_and_loading_and_width_target.data()
+        esc_arm_hold_and_loading_and_width.set_targets(arm_hold_and_loading_and_width_target.data()
         );
         dc_arm_height.set_target(arm_height_target);
     } else if ((now_ms - last_teleop_received_ms) > TELEOP_TIMEOUT_MS && !teleop_timeout) {
