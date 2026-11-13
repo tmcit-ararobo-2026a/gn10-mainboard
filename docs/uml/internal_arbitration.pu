@@ -1,35 +1,36 @@
 @startuml internal_arbitration
 skinparam componentStyle uml2
 
-package "入力インターフェース" {
-    [Teleop (UDP:10410)] as InTeleop
-    [Operation (UDP:39244)] as InOperation
+package "Ethernet Input (W5500)" {
+    [Teleop (UDP: 10410)] as InTeleop
+    [Operation (UDP: 39244)] as InOperation
 }
 
-package "メイン基板 コア処理" {
+package "Mainboard Core" {
     component "RobotStateMachine" as FSM
-    component "ControlArbitrator\n(操作権限調停)" as Arbitrator
+    component "ControlArbitrator" as Arbitrator
 }
 
-package "アクチュエータ出力 (CAN/GPIO)" {
-    [3輪オムニ足回り (C620)] as Wheel
-    [ベルト直動射出 (VESC)] as Belt
-    [バケツアーム (DC/C610)] as Arm
-    [エアシリンダ (Solenoid)] as Air
+package "CAN Bus Output" {
+    [3-Wheel Omni (FDCAN3 / C620)] as Wheel
+    [Belt Launcher (FDCAN3 / VESC)] as Belt
+    [Arm & Loader (FDCAN3 / C610, CAN1 / DC)] as Arm
+    [Solenoid (CAN1)] as Air
+    [Power & LED (FDCAN2)] as PowerLED
 }
 
-InTeleop --> FSM : モード切替(Toggle SW)\nTargetId選択(十字キー)\nキャンセル(Stick Push)
-InOperation --> FSM : NavigationStatus 同期\n(タイムアウト監視: 200ms)
+InTeleop --> FSM : Mode toggle, TargetId, Cancel
+InOperation --> FSM : NavigationStatus sync\n(200 ms timeout)
 
-FSM --> [Command (UDP:26574)] : command_t 送信
+FSM --> [Feedback & Command (UDP: 39244)] : feedback_t (command_t)
 
-InTeleop --> Arbitrator : 手動操作指令
-InOperation --> Arbitrator : 自動制御指令 (vel, arm, belt)
-FSM --> Arbitrator : 現在のNavigationStatus
+InTeleop --> Arbitrator : Manual commands
+InOperation --> Arbitrator : Autonomous commands\n(vel, belt_launcher_speed)
+FSM --> Arbitrator : Current NavigationStatus
 
 Arbitrator --> Wheel : vx, vy, vyaw
-Arbitrator --> Belt : 威力(手動/自動) & 射出トリガー(R1)
-Arbitrator --> Arm : 昇降・展開・把持(手動/自動/ロック)
-Arbitrator --> Air : 射出トリガー(L1)
+Arbitrator --> Belt : Target velocity & fire trigger (R1)
+Arbitrator --> Arm : Height, width, hold, reload
+Arbitrator --> Air : Fire trigger (L1)
+InTeleop --> PowerLED : Remote EMS (right_toggle_sw)
 @enduml
-
